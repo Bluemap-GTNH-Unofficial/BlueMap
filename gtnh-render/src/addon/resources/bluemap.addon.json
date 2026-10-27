@@ -1,0 +1,4 @@
+{
+  "id": "bluemap-gtnh-render",
+  "entrypoint": "de.bluecolored.bluemap.gtnh.render.GtnhRenderAddon"
+}

@@ -22,6 +22,7 @@ includeBuild("api")
 include(":core")
 include(":common")
 include(":legacy")
+include(":gtnh-render")
 
 implementation("cli")
 implementation("fabric")
