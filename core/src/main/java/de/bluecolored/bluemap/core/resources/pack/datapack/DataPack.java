@@ -44,6 +44,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class DataPack extends Pack {
@@ -64,6 +67,8 @@ public class DataPack extends Pack {
 
     private LegacyBiomes legacyBiomes;
 
+    private final List<Path> roots = new ArrayList<>();
+
     public DataPack(PackVersion packVersion) {
         super(packVersion);
     }
@@ -71,6 +76,7 @@ public class DataPack extends Pack {
     @Override
     public void loadResources(Iterable<Path> roots) throws IOException, InterruptedException {
         Logger.global.logDebug("Loading datapack...");
+        roots.forEach(this.roots::add);
 
         for (Path root : roots) {
             Logger.global.logDebug("Loading datapack from: " + root + " ...");
@@ -134,6 +140,13 @@ public class DataPack extends Pack {
                         }
                     });
         }
+    }
+
+    /**
+     * The pack roots this datapack was loaded from (in priority order), so addons can read their own data files.
+     */
+    public List<Path> getRoots() {
+        return Collections.unmodifiableList(roots);
     }
 
     public void bake() {

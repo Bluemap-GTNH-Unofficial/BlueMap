@@ -90,7 +90,10 @@ fun main(args: Array<String>) {
     val dataPack = DataPack(PackVersion(12, 0))
     val legacyFolder = Path.of(positional[0])
     val legacy = LegacyWorldLoader().loadWorld(legacyFolder, DataPack.DIMENSION_OVERWORLD, null, dataPack)
-    val raw = LegacyWorldLoader({ RegistryBlockStateMapper(it) }).loadWorld(legacyFolder, DataPack.DIMENSION_OVERWORLD, null, dataPack)
+    val raw =
+        LegacyWorldLoader(
+            { registry, _ -> RegistryBlockStateMapper(registry) },
+        ).loadWorld(legacyFolder, DataPack.DIMENSION_OVERWORLD, null, dataPack)
     val modern = MCAWorld.load(Path.of(positional[1]), DataPack.DIMENSION_OVERWORLD, null, dataPack)
 
     val result = FlatteningComparison.compare(legacy, raw, modern, box, labels)
@@ -128,6 +131,9 @@ object FlatteningComparison {
         ATTACHED_STEM("1.7 bends grown stems to an adjacent fruit, the 1.13 upgrade only attaches stems on marked chunk edges"),
         BREWING_STAND_BOTTLES(
             "1.13 recomputes brewing stand bottles from the (here empty) inventory when ticking, 1.7 renders the meta bits",
+        ),
+        CARVED_PUMPKIN_FACE(
+            "1.7 always shows the pumpkin face, the 1.13 converter turns carved pumpkins on grass/dirt into plain pumpkins",
         ),
         FLOWER_POT_ITEM_ID(
             "1.13.2's converter only reads item names from flower pots, 1.7 stores numeric item ids, so a real upgrade empties every pot (DataConverter maps them)",
@@ -242,6 +248,10 @@ object FlatteningComparison {
 
             id == "minecraft:brewing_stand" && modern.id == legacy.id -> {
                 Intentional.BREWING_STAND_BOTTLES
+            }
+
+            id == "minecraft:carved_pumpkin" && modern.id.formatted == "minecraft:pumpkin" -> {
+                Intentional.CARVED_PUMPKIN_FACE
             }
 
             id.startsWith("minecraft:potted_") && modern.id.formatted == "minecraft:flower_pot" -> {

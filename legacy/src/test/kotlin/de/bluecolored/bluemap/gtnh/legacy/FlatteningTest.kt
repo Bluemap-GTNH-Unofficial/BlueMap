@@ -25,6 +25,8 @@
 package de.bluecolored.bluemap.gtnh.legacy
 
 import com.google.gson.JsonParser
+import de.bluecolored.bluemap.core.resources.pack.PackVersion
+import de.bluecolored.bluemap.core.resources.pack.datapack.DataPack
 import de.bluecolored.bluemap.core.util.Key
 import de.bluecolored.bluemap.core.world.BlockState
 import de.bluecolored.bluemap.core.world.mca.blockentity.SignBlockEntity
@@ -190,7 +192,7 @@ class FlatteningTest {
         w.set(4, 3, 0, "grass").set(4, 4, 0, "snow_layer")
         w.set(5, 3, 0, "grass").set(5, 4, 0, "snow")
         w.set(6, 3, 0, "grass").set(6, 4, 0, "stone")
-        // carved pumpkin on dirt becomes a plain pumpkin, on stone it keeps its face
+        // carved pumpkins keep their face (1.7 look), also on dirt where the 1.13 converter would drop it
         w.set(8, 3, 0, "dirt").set(8, 4, 0, "pumpkin", 2)
         w.set(9, 3, 0, "stone").set(9, 4, 0, "pumpkin", 2)
         // a bed half without its other half is gone
@@ -203,7 +205,7 @@ class FlatteningTest {
         assertEquals("true", w.state(4, 3, 0).properties["snowy"])
         assertEquals("true", w.state(5, 3, 0).properties["snowy"])
         assertEquals("false", w.state(6, 3, 0).properties["snowy"])
-        assertEquals(s("minecraft:pumpkin"), w.state(8, 4, 0))
+        assertEquals(s("minecraft:carved_pumpkin[facing=north]"), w.state(8, 4, 0))
         assertEquals(s("minecraft:carved_pumpkin[facing=north]"), w.state(9, 4, 0))
         assertSame(BlockState.AIR, w.state(10, 4, 0))
     }
@@ -266,5 +268,85 @@ class FlatteningTest {
         // the base state is the plain table state
         assertEquals("false", chunk.getBaseBlockState(0, 4, 0).properties["east"])
         assertEquals("true", chunk.getBlockState(0, 4, 0).properties["east"])
+    }
+
+    // ---- modded neighbours: exporter shape data (data/gtnh/block_shapes.json) or the solid-cube fallback ----
+
+    @Test
+    fun moddedNeighbourShapes() {
+        val names = FmlBlockRegistry.VANILLA_1_7_10.let { v -> (0..v.maxId).mapNotNull { id -> v.name(id)?.let { id to it } }.toMap() }
+        val registry = FmlBlockRegistry(names + mapOf(4000 to "gregtech:gt.blockmachines", 4001 to "gregtech:gt.blockcasings"))
+        val shapes =
+            BlockShapes(
+                BlockShapes.parse(
+                    JsonParser
+                        .parseString(
+                            """
+                            {"format": 1, "blocks": {"gregtech:gt.blockmachines": {
+                              "*": {"fullCube": false, "opaque": false, "solidSides": 0, "fenceConnect": false, "paneConnect": false},
+                              "7": {"fullCube": false, "opaque": false, "solidSides": 4, "fenceConnect": false, "paneConnect": false}
+                            }}}
+                            """.trimIndent(),
+                        ).asJsonObject,
+                ),
+            )
+
+        fun world(shapes: BlockShapes) =
+            TestWorld(registry, FlatteningBlockStateMapper(registry, shapes = shapes))
+                .set(0, 4, 0, "fence")
+                .set(1, 4, 0, "gregtech:gt.blockmachines") // pipe east of the fence
+                .set(0, 4, 2, "fence")
+                .set(1, 4, 2, "gregtech:gt.blockcasings") // casing without data: solid cube
+                .set(0, 4, 4, "glass_pane")
+                .set(0, 4, 5, "gregtech:gt.blockmachines", 7)
+                .set(0, 4, 6, "redstone_wire")
+                .set(1, 4, 6, "gregtech:gt.blockmachines")
+                .set(1, 5, 6, "redstone_wire")
+
+        val withData = world(shapes)
+        assertEquals("false", withData.state(0, 4, 0).properties["east"]) // a GT pipe is not a fence post
+        assertEquals("true", withData.state(0, 4, 2).properties["east"])
+        assertEquals("none", withData.state(0, 4, 6).properties["east"]) // no solid top: the wire does not climb
+
+        // the pane sits north of the meta-7 block, whose solid side bit 2 (= NORTH, ForgeDirection order) faces it
+        assertEquals("true", withData.state(0, 4, 4).properties["south"])
+
+        val fallback = world(BlockShapes.DEFAULT)
+        assertEquals("true", fallback.state(0, 4, 0).properties["east"]) // without data modded blocks are solid cubes
+        assertEquals("up", fallback.state(0, 4, 6).properties["east"])
+    }
+
+    @Test
+    fun blockShapesFromDataPackRoots(
+        @org.junit.jupiter.api.io.TempDir dir: Path,
+    ) {
+        val file = dir.resolve(BlockShapes.FILE)
+        Files.createDirectories(file.parent)
+        Files.writeString(
+            file,
+            """{"format": 1, "blocks": {"gregtech:gt.blockmachines": {"*": """ +
+                """{"fullCube": false, "opaque": false, "solidSides": 0, "fenceConnect": false, "paneConnect": true}}}}""",
+        )
+        val dataPack = DataPack(PackVersion(12, 0))
+        dataPack.loadResources(listOf(dir))
+        val pipe = BlockState(Key("gregtech", "gt.blockmachines"), mapOf("meta" to "3"))
+        val shapes = BlockShapes.load(dataPack)
+        assertFalse(shapes.fenceAttaches(pipe, Face.WEST))
+        assertTrue(shapes.paneAttaches(pipe, Face.WEST))
+        // no file: modded blocks stay solid cubes
+        val empty = DataPack(PackVersion(12, 0)).also { it.loadResources(emptyList()) }
+        assertSame(BlockShapes.DEFAULT, BlockShapes.load(empty))
+    }
+
+    @Test
+    fun oceanFloorHeightsSkipLiquidsAndPlants() {
+        val w = TestWorld()
+        w.set(0, 30, 0, "stone")
+        for (y in 31..62) w.set(0, y, 0, "water")
+        w.set(1, 40, 1, "grass").set(1, 41, 1, "tallgrass", 1)
+        val chunk = w.chunk(0, 0)
+        assertTrue(chunk.hasOceanFloorHeights())
+        assertEquals(30, chunk.getOceanFloorY(0, 0)) // below 32 blocks of water
+        assertEquals(40, chunk.getOceanFloorY(1, 1)) // the grass, not the plant on it
     }
 }

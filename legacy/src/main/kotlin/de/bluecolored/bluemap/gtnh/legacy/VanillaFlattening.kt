@@ -93,15 +93,16 @@ object VanillaFlattening {
 /**
  * Decorates the identity mapping: vanilla (`minecraft:*`, ids <= 175 in 1.7.10) blocks become their flattened
  * 1.13 states, everything else stays as [delegate] maps it. Neighbour / block-entity dependent parts are
- * provided as [fixer]s ([VanillaFixers]).
+ * provided as [fixer]s ([VanillaFixers]); [shapes] describes modded neighbours (exporter data, see [BlockShapes]).
  */
 class FlatteningBlockStateMapper
     @JvmOverloads
     constructor(
         private val registry: FmlBlockRegistry,
         private val delegate: LegacyBlockStateMapper = RegistryBlockStateMapper(registry),
+        shapes: BlockShapes = BlockShapes.DEFAULT,
     ) : LegacyBlockStateMapper {
-        private val fixers = VanillaFixers(registry)
+        private val fixers = VanillaFixers(registry, shapes)
 
         override fun map(
             id: Int,
