@@ -57,6 +57,7 @@ object GtnhRender {
         registered = true
         BlockRendererType.REGISTRY.register(QUADS)
         ResourcePack.Extension.REGISTRY.register(QuadModelExtension.TYPE)
+        ResourcePack.Extension.REGISTRY.register(MissingBlockStates.TYPE)
         CoverageReport.install()
     }
 }
