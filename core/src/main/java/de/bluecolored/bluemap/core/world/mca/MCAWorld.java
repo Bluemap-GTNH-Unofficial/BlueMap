@@ -53,6 +53,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 @Getter
@@ -71,6 +72,17 @@ public class MCAWorld implements World {
     private final ChunkGrid<MCAEntityChunk> entityChunkGrid;
 
     private MCAWorld(Path worldFolder, Key dimension, DimensionType dimensionType, Path dimensionFolder, DataPack dataPack) {
+        this(worldFolder, dimension, dimensionType, dimensionFolder, dataPack, MCAChunkLoader::new);
+    }
+
+    /**
+     * Creates an MCAWorld that reads its block-chunks from <code>&lt;dimensionFolder&gt;/region</code> using a custom
+     * {@link ChunkLoader}, e.g. for world-formats that can not be detected by the chunks DataVersion.
+     */
+    public MCAWorld(
+            Path worldFolder, Key dimension, DimensionType dimensionType, Path dimensionFolder, DataPack dataPack,
+            Function<? super MCAWorld, ? extends ChunkLoader<Chunk>> chunkLoaderFactory
+    ) {
         this.id = World.id(worldFolder, dimension);
         this.worldFolder = worldFolder;
         this.dimension = dimension;
@@ -79,7 +91,7 @@ public class MCAWorld implements World {
         this.dataPack = dataPack;
 
 
-        this.blockChunkGrid = new ChunkGrid<>(new MCAChunkLoader(this), dimensionFolder.resolve("region"));
+        this.blockChunkGrid = new ChunkGrid<>(chunkLoaderFactory.apply(this), dimensionFolder.resolve("region"));
         this.entityChunkGrid = new ChunkGrid<>(new MCAEntityChunkLoader(), dimensionFolder.resolve("entities"));
 
     }
