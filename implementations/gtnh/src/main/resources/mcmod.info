@@ -1,0 +1,21 @@
+{
+	"modListVersion": 2,
+	"modList": [{
+		"modid": "${modId}",
+		"name": "${modName}",
+		"description": "A 3D web map of the server's worlds (BlueMap for GT New Horizons 2.9, Minecraft 1.7.10). Server-side only.",
+		"version": "${modVersion}",
+		"mcversion": "${minecraftVersion}",
+		"url": "https://bluemap.bluecolored.de/",
+		"updateUrl": "",
+		"authorList": ["Blue (Lukas Rieger)", "BlueMap contributors"],
+		"credits": "",
+		"logoFile": "",
+		"screenshots": [],
+		"parent": "",
+		"requiredMods": ["forgelin"],
+		"dependencies": ["forgelin"],
+		"dependants": [],
+		"useDependencyInformation": false
+	}]
+}

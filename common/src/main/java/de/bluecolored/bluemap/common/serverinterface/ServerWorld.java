@@ -45,6 +45,14 @@ public interface ServerWorld {
     }
 
     /**
+     * The world-loader that auto-generated map-configs of this world should use, empty for the default loader.
+     */
+    @DebugDump
+    default Optional<Key> getWorldLoader() {
+        return Optional.empty();
+    }
+
+    /**
      * Attempts to persist all changes that have been made in a world to disk.
      *
      * @return <code>true</code> if the changes have been successfully persisted, <code>false</code> if this operation is not supported by the implementation

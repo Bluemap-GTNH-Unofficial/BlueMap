@@ -291,6 +291,9 @@ public class BlueMapConfigManager implements BlueMapConfiguration {
                             case "minecraft:the_end" -> createEndMapTemplate(name, worldFolder, dimension, dimensionType, i - 1 + 200);
                             default -> createOverworldMapTemplate(name, worldFolder, dimension, dimensionType, i - 1 + 300);
                         };
+                        world.getWorldLoader().ifPresent(loader -> template
+                                .setConditional("display-loader", true)
+                                .setVariable("loader", loader.getFormatted()));
 
                         Files.writeString(
                                 configFile,
