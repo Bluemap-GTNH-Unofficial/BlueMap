@@ -27,7 +27,6 @@ package de.bluecolored.bluemap.gtnh.legacy
 import de.bluecolored.bluemap.core.util.Key
 import de.bluecolored.bluemap.core.world.BlockEntity
 import de.bluecolored.bluemap.core.world.BlockState
-import de.bluecolored.bluemap.gtnh.legacy.VanillaBlockShapes.faceShape
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -44,12 +43,15 @@ import java.util.concurrent.ConcurrentHashMap
  *   only the chunk converter checks snow layers alone);
  * - grown pumpkin / melon stems attach to an adjacent fruit (1.7 bends them; 1.13's upgrade only does it on
  *   chunk edges);
+ * - carved pumpkins on grass / dirt keep their face (1.7 always shows it; the converter turns them into plain
+ *   pumpkins to undo 1.13 world generation);
  * - flower pots keep their content (1.7 stores numeric item ids, which 1.13.2's converter ignores; DataConverter maps
  *   them like here).
  * See `FlatteningComparison.Intentional` for the full list checked against the 1.13.2 oracle.
  */
 internal class VanillaFixers(
     private val registry: FmlBlockRegistry,
+    private val shapes: BlockShapes = BlockShapes.DEFAULT,
 ) {
     private val byBlock: Map<String, LegacyBlockFixer> = buildFixers()
 
@@ -107,7 +109,6 @@ internal class VanillaFixers(
         put(::snowy, "grass_block", "podzol", "mycelium")
         put(::door, "oak_door", "iron_door")
         put(::doublePlant, "sunflower", "lilac", "tall_grass", "large_fern", "rose_bush", "peony")
-        put(::pumpkin, "carved_pumpkin")
         put(::flowerPot, "flower_pot")
         put(::skull, "skeleton_skull", "skeleton_wall_skull")
         put(::noteBlock, "note_block")
@@ -217,18 +218,6 @@ internal class VanillaFixers(
         return intern(BlockState(below, mapOf("half" to "upper")))
     }
 
-    private fun pumpkin(
-        state: BlockState,
-        x: Int,
-        y: Int,
-        z: Int,
-        blocks: LegacyBlockAccess,
-        blockEntity: BlockEntity?,
-    ): BlockState {
-        val below = blocks.baseState(x, y - 1, z).id
-        return if (below == GRASS_BLOCK || below == DIRT) PUMPKIN else state
-    }
-
     private fun flowerPot(
         state: BlockState,
         x: Int,
@@ -312,10 +301,10 @@ internal class VanillaFixers(
         blocks: LegacyBlockAccess,
         blockEntity: BlockEntity?,
     ): BlockState =
-        connect(state, x, y, z, blocks) { neighbour, shape ->
-            (shape == FaceShape.SOLID && !VanillaBlockShapes.isFenceAttachException(neighbour)) ||
+        connect(state, x, y, z, blocks) { neighbour, face ->
+            shapes.fenceAttaches(neighbour, face) ||
                 (
-                    shape == FaceShape.MIDDLE_POLE &&
+                    shapes.faceShape(neighbour, face) == FaceShape.MIDDLE_POLE &&
                         (
                             VanillaBlockShapes.isFenceGate(neighbour) ||
                                 VanillaBlockShapes.isWooden(neighbour) == VanillaBlockShapes.isWooden(state)
@@ -331,8 +320,8 @@ internal class VanillaFixers(
         blocks: LegacyBlockAccess,
         blockEntity: BlockEntity?,
     ): BlockState =
-        connect(state, x, y, z, blocks) { neighbour, shape ->
-            (shape == FaceShape.SOLID && !VanillaBlockShapes.isPaneAttachException(neighbour)) || shape == FaceShape.MIDDLE_POLE_THIN
+        connect(state, x, y, z, blocks) { neighbour, face ->
+            shapes.paneAttaches(neighbour, face) || shapes.faceShape(neighbour, face) == FaceShape.MIDDLE_POLE_THIN
         }
 
     private fun wall(
@@ -344,8 +333,9 @@ internal class VanillaFixers(
         blockEntity: BlockEntity?,
     ): BlockState {
         val connected =
-            connect(state, x, y, z, blocks) { neighbour, shape ->
-                (shape == FaceShape.SOLID && !VanillaBlockShapes.isFenceAttachException(neighbour)) ||
+            connect(state, x, y, z, blocks) { neighbour, face ->
+                val shape = shapes.faceShape(neighbour, face)
+                shapes.fenceAttaches(neighbour, face) ||
                     shape == FaceShape.MIDDLE_POLE_THICK ||
                     (shape == FaceShape.MIDDLE_POLE && VanillaBlockShapes.isFenceGate(neighbour))
             }
@@ -359,14 +349,14 @@ internal class VanillaFixers(
         return with(connected, "up", up.toString())
     }
 
-    /** Sets `north`/`south`/`west`/`east` by [attaches] (neighbour state, shape of its face towards us). */
+    /** Sets `north`/`south`/`west`/`east` by [attaches] (neighbour state, its face pointing back at us). */
     private inline fun connect(
         state: BlockState,
         x: Int,
         y: Int,
         z: Int,
         blocks: LegacyBlockAccess,
-        attaches: (BlockState, FaceShape) -> Boolean,
+        attaches: (BlockState, Face) -> Boolean,
     ): BlockState {
         val props = HashMap(state.properties)
         for (face in Face.HORIZONTAL) {
@@ -374,7 +364,7 @@ internal class VanillaFixers(
             val nz = z + face.dz
             var neighbour = blocks.baseState(nx, y, nz)
             if (VanillaBlockShapes.isStairs(neighbour)) neighbour = blocks.state(nx, y, nz)
-            props[face.id] = attaches(neighbour, faceShape(neighbour, face.opposite)).toString()
+            props[face.id] = attaches(neighbour, face.opposite).toString()
         }
         return intern(BlockState(state.id, props))
     }
@@ -457,19 +447,19 @@ internal class VanillaFixers(
         blockEntity: BlockEntity?,
     ): BlockState {
         val props = HashMap(state.properties)
-        val aboveIsNormal = VanillaBlockShapes.isNormalCube(blocks.baseState(x, y + 1, z))
+        val aboveIsNormal = shapes.isNormalCube(blocks.baseState(x, y + 1, z))
         for (face in Face.HORIZONTAL) {
             val nx = x + face.dx
             val nz = z + face.dz
             val neighbour = blocks.baseState(nx, y, nz)
             var side = "none"
             if (!aboveIsNormal &&
-                (VanillaBlockShapes.isTopSolid(neighbour) || neighbour.id == GLOWSTONE) &&
+                (shapes.isTopSolid(neighbour) || neighbour.id == GLOWSTONE) &&
                 isRedstoneWire(blocks.baseState(nx, y + 1, nz))
             ) {
-                side = if (VanillaBlockShapes.isBlockNormalCube(neighbour)) "up" else "side"
+                side = if (shapes.isBlockNormalCube(neighbour)) "up" else "side"
             } else if (wireConnects(neighbour, face) ||
-                (!VanillaBlockShapes.isNormalCube(neighbour) && isRedstoneWire(blocks.baseState(nx, y - 1, nz)))
+                (!shapes.isNormalCube(neighbour) && isRedstoneWire(blocks.baseState(nx, y - 1, nz)))
             ) {
                 side = "side"
             }
@@ -566,7 +556,7 @@ internal class VanillaFixers(
     private fun vineAttaches(
         state: BlockState,
         face: Face,
-    ): Boolean = faceShape(state, face) == FaceShape.SOLID && !VanillaBlockShapes.isVineException(state)
+    ): Boolean = shapes.vineAttaches(state, face)
 
     /** 1.13.2 `BlockFire.updatePostPlacement`: side flags on unsupported fire, removed if nothing holds it. */
     private fun fire(
@@ -578,7 +568,7 @@ internal class VanillaFixers(
         blockEntity: BlockEntity?,
     ): BlockState {
         val below = blocks.baseState(x, y - 1, z)
-        val belowHolds = VanillaBlockShapes.isTopSolid(below)
+        val belowHolds = shapes.isTopSolid(below)
         var anyFlammable = false
         val flags = HashMap<String, String>()
         for (face in Face.entries) {
@@ -647,7 +637,7 @@ internal class VanillaFixers(
         val pumpkin = state.id.value == "pumpkin_stem"
         for (face in STEM_ORDER) {
             val fruit = blocks.baseState(x + face.dx, y, z + face.dz).id
-            val matches = if (pumpkin) fruit == PUMPKIN.id || fruit == CARVED_PUMPKIN else fruit == MELON
+            val matches = if (pumpkin) fruit == PUMPKIN || fruit == CARVED_PUMPKIN else fruit == MELON
             if (matches) {
                 val attached = if (pumpkin) "attached_pumpkin_stem" else "attached_melon_stem"
                 return intern(BlockState(Key.minecraft(attached), mapOf("facing" to face.id)))
@@ -664,8 +654,6 @@ internal class VanillaFixers(
     companion object {
         private val SNOW = Key.minecraft("snow")
         private val SNOW_BLOCK = Key.minecraft("snow_block")
-        private val GRASS_BLOCK = Key.minecraft("grass_block")
-        private val DIRT = Key.minecraft("dirt")
         private val CARVED_PUMPKIN = Key.minecraft("carved_pumpkin")
         private val MELON = Key.minecraft("melon")
         private val GLOWSTONE = Key.minecraft("glowstone")
@@ -675,7 +663,7 @@ internal class VanillaFixers(
         private val TRIPWIRE = Key.minecraft("tripwire")
         private val TRIPWIRE_HOOK = Key.minecraft("tripwire_hook")
         private val VINE = Key.minecraft("vine")
-        private val PUMPKIN = BlockState(Key.minecraft("pumpkin"))
+        private val PUMPKIN = Key.minecraft("pumpkin")
         private const val MAX_CHEST_ROW = 64
 
         private val STEM_ORDER = listOf(Face.WEST, Face.EAST, Face.NORTH, Face.SOUTH)

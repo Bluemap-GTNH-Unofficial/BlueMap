@@ -26,6 +26,7 @@
 
 package de.bluecolored.bluemap.gtnh.legacy
 
+import de.bluecolored.bluemap.core.util.Key
 import de.bluecolored.bluemap.core.world.BlockEntity
 import de.bluecolored.bluemap.core.world.BlockState
 import de.bluecolored.bluemap.core.world.Chunk
@@ -144,6 +145,46 @@ class Chunk_1_7 internal constructor(
         z: Int,
     ): Int = heightMap?.get((z and 0xF) shl 4 or (x and 0xF)) ?: 0
 
+    // computed on first use; benign race: the computation is deterministic
+    @Volatile
+    private var oceanFloor: IntArray? = null
+
+    /**
+     * 1.7 chunks have no ocean-floor heightmap; derived here as the highest solid (non-liquid) block per column, so
+     * BlueMap's cave detection does not strip lake and ocean floors whose skylight is 0 under deep water.
+     */
+    override fun hasOceanFloorHeights(): Boolean = sections.isNotEmpty()
+
+    override fun getOceanFloorY(
+        x: Int,
+        z: Int,
+    ): Int {
+        val heights = oceanFloor ?: computeOceanFloor().also { oceanFloor = it }
+        return heights[(z and 0xF) shl 4 or (x and 0xF)]
+    }
+
+    private fun computeOceanFloor(): IntArray {
+        val heights = IntArray(256) { sectionMin * 16 }
+        for (column in 0 until 256) {
+            val x = column and 0xF
+            val z = column shr 4
+            var y = sectionMax * 16 + 15
+            while (y >= sectionMin * 16) {
+                if (isOceanFloorBlock(getBaseBlockState(x, y, z))) {
+                    heights[column] = y
+                    break
+                }
+                y--
+            }
+        }
+        return heights
+    }
+
+    private fun isOceanFloorBlock(state: BlockState): Boolean {
+        if (state.isAir || state.isWater || state.id == LAVA) return false
+        return VanillaBlockShapes.isFullCube(state) || state.id.value.endsWith("_slab") || state.id.value.endsWith("_stairs")
+    }
+
     override fun getBlockEntity(
         x: Int,
         y: Int,
@@ -160,6 +201,8 @@ class Chunk_1_7 internal constructor(
     }
 
     companion object {
+        private val LAVA = Key.minecraft("lava")
+
         internal fun index(
             x: Int,
             y: Int,

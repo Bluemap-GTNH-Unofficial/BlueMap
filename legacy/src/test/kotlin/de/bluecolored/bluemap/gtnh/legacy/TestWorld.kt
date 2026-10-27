@@ -33,7 +33,7 @@ import java.io.ByteArrayOutputStream
 
 /**
  * A small in-memory 1.7.10 world for tests: blocks and block entities are written as real 1.7 chunk NBT
- * (vanilla `Blocks`/`Data` sections) and read back through [LegacyChunkLoader], with neighbour access across chunks.
+ * (vanilla `Blocks`/`Add`/`Data` sections, ids < 4096) and read back through [LegacyChunkLoader], with neighbour access across chunks.
  */
 class TestWorld(
     private val registry: FmlBlockRegistry = FmlBlockRegistry.VANILLA_1_7_10,
@@ -131,16 +131,19 @@ class TestWorld(
             for (sy in sectionYs) {
                 val ids = ByteArray(4096)
                 val data = ByteArray(2048)
+                val add = ByteArray(2048)
                 for ((pos, block) in inChunk) {
                     val (x, y, z) = pos
                     if (y shr 4 != sy) continue
                     val i = (y and 15) shl 8 or ((z and 15) shl 4) or (x and 15)
                     ids[i] = block.id.toByte()
                     data[i shr 1] = (data[i shr 1].toInt() or ((block.meta and 15) shl ((i and 1) * 4))).toByte()
+                    add[i shr 1] = (add[i shr 1].toInt() or (((block.id shr 8) and 15) shl ((i and 1) * 4))).toByte()
                 }
                 w.beginCompound()
                 w.name("Y").value(sy.toByte())
                 w.name("Blocks").value(ids)
+                w.name("Add").value(add)
                 w.name("Data").value(data)
                 w.name("BlockLight").value(ByteArray(2048))
                 w.name("SkyLight").value(ByteArray(2048) { -1 })

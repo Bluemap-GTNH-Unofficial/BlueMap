@@ -38,13 +38,16 @@ import java.nio.file.Path
  * Loads a Forge 1.7.10 world (one dimension) as an [MCAWorld] backed by a [LegacyChunkLoader].
  *
  * The block and biome mappings are pluggable; by default vanilla blocks are flattened to 1.13 states
- * ([FlatteningBlockStateMapper]) and everything else keeps its `modid:name[meta]` identity.
+ * ([FlatteningBlockStateMapper], with modded shape data from the datapack roots, [BlockShapes]) and everything
+ * else keeps its `modid:name[meta]` identity.
  * Worlds without FML registry data (plain vanilla 1.7.10) use the fixed vanilla ids.
  */
 class LegacyWorldLoader
     @JvmOverloads
     constructor(
-        private val blockStateMapperFactory: (FmlBlockRegistry) -> LegacyBlockStateMapper = { FlatteningBlockStateMapper(it) },
+        private val blockStateMapperFactory: (FmlBlockRegistry, DataPack) -> LegacyBlockStateMapper = { registry, dataPack ->
+            FlatteningBlockStateMapper(registry, shapes = BlockShapes.load(dataPack))
+        },
         private val biomeMapperFactory: (DataPack) -> LegacyBiomeMapper = { dataPack -> VanillaLegacyBiomeMapper(dataPack::getBiome) },
     ) : WorldLoader {
         @Throws(IOException::class)
@@ -62,7 +65,7 @@ class LegacyWorldLoader
                 } ?: LegacyDimensions.dimensionType(dimension)
             val dimensionFolder = LegacyDimensions.resolveFolder(path, dimension)
 
-            val blockStates = blockStateMapperFactory(loadRegistry(path))
+            val blockStates = blockStateMapperFactory(loadRegistry(path), dataPack)
             val biomes = biomeMapperFactory(dataPack)
 
             return MCAWorld(path, dimension, dimensionType, dimensionFolder, dataPack) { world ->
