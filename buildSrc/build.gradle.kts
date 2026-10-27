@@ -18,6 +18,7 @@ dependencies {
     implementation ( plugin( libs.plugins.curseforge.publish ) )
     implementation ( plugin( libs.plugins.hangar ) )
     implementation ( plugin( libs.plugins.sponge.ore ) )
+    implementation ( plugin( libs.plugins.kotlin.jvm ) )
 
     // explicitly set guava version to resolve a build-dependency issue
     implementation( libs.guava )
