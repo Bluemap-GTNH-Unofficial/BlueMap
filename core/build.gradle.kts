@@ -31,14 +31,18 @@ tasks.register("zipResourceExtensions", type = Zip::class) {
 tasks.processResources {
     dependsOn("zipResourceExtensions")
 
+    // expand() in a child spec is not tracked: declare the values, so version.json is not left stale
+    val versionProperties = mapOf(
+        "version" to project.version.toString(),
+        "gitHash" to gitHash() + if (gitClean()) "" else " (dirty)",
+    )
+    inputs.properties(versionProperties)
+
     from("src/main/resources") {
         include("de/bluecolored/bluemap/version.json")
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
 
-        expand (
-            "version" to project.version,
-            "gitHash" to gitHash() + if (gitClean()) "" else " (dirty)",
-        )
+        expand (versionProperties)
     }
 }
 
