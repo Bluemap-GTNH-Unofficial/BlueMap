@@ -21,6 +21,7 @@ includeBuild("api")
 
 include(":core")
 include(":common")
+include(":legacy")
 
 implementation("cli")
 implementation("fabric")
