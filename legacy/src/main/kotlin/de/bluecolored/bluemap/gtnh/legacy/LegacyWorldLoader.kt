@@ -37,13 +37,14 @@ import java.nio.file.Path
 /**
  * Loads a Forge 1.7.10 world (one dimension) as an [MCAWorld] backed by a [LegacyChunkLoader].
  *
- * The block and biome mappings are pluggable so later phases can decorate or replace them
- * (vanilla flattening, runtime biome dumps).
+ * The block and biome mappings are pluggable; by default vanilla blocks are flattened to 1.13 states
+ * ([FlatteningBlockStateMapper]) and everything else keeps its `modid:name[meta]` identity.
+ * Worlds without FML registry data (plain vanilla 1.7.10) use the fixed vanilla ids.
  */
 class LegacyWorldLoader
     @JvmOverloads
     constructor(
-        private val blockStateMapperFactory: (FmlBlockRegistry) -> LegacyBlockStateMapper = ::RegistryBlockStateMapper,
+        private val blockStateMapperFactory: (FmlBlockRegistry) -> LegacyBlockStateMapper = { FlatteningBlockStateMapper(it) },
         private val biomeMapperFactory: (DataPack) -> LegacyBiomeMapper = { dataPack -> VanillaLegacyBiomeMapper(dataPack::getBiome) },
     ) : WorldLoader {
         @Throws(IOException::class)
@@ -64,20 +65,21 @@ class LegacyWorldLoader
             val blockStates = blockStateMapperFactory(loadRegistry(path))
             val biomes = biomeMapperFactory(dataPack)
 
-            return MCAWorld(path, dimension, dimensionType, dimensionFolder, dataPack) { _ ->
-                LegacyChunkLoader(blockStates, biomes, dimensionType)
+            return MCAWorld(path, dimension, dimensionType, dimensionFolder, dataPack) { world ->
+                LegacyChunkLoader(blockStates, biomes, dimensionType, WorldBlockAccess(world))
             }
         }
 
         private fun loadRegistry(worldFolder: Path): FmlBlockRegistry {
             val levelDat = worldFolder.resolve("level.dat")
             if (!Files.exists(levelDat)) {
-                Logger.global.logWarning("No level.dat found in '$worldFolder', all blocks will be unknown.")
-                return FmlBlockRegistry.EMPTY
+                Logger.global.logWarning("No level.dat found in '$worldFolder', assuming vanilla 1.7.10 block ids.")
+                return FmlBlockRegistry.VANILLA_1_7_10
             }
             val registry = FmlBlockRegistry.load(levelDat)
             if (registry.size == 0) {
-                Logger.global.logWarning("'$levelDat' contains no FML block registry (FML.ItemData), all blocks will be unknown.")
+                Logger.global.logInfo("'$levelDat' contains no FML block registry (FML.ItemData), assuming vanilla 1.7.10 block ids.")
+                return FmlBlockRegistry.VANILLA_1_7_10
             }
             return registry
         }

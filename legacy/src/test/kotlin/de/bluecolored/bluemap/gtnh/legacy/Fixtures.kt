@@ -58,10 +58,11 @@ object Fixtures {
         return loader.load(data, 0, data.size, Compression.DEFLATE)
     }
 
+    /** The identity state of a registry name (normalized key, contract C1). */
     fun state(
         name: String,
         meta: Int,
-    ): BlockState = BlockState(Key.parse(name), mapOf("meta" to meta.toString()))
+    ): BlockState = RegistryBlockStateMapper.identityState(name, meta)
 
     /** Writes a region file holding the given zlib chunk payload at chunk (x, z). */
     fun writeRegion(

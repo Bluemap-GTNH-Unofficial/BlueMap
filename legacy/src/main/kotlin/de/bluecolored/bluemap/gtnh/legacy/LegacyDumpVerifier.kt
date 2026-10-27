@@ -186,7 +186,7 @@ object DumpVerifier {
         for (e in entries) {
             val chunk = chunks.chunkAtBlock(e.x, e.z)
             val actual = chunk.getBlockState(e.x, e.y, e.z)
-            val expected = BlockState(Key.parse(e.name), mapOf(RegistryBlockStateMapper.META to e.meta.toString()))
+            val expected = RegistryBlockStateMapper.identityState(e.name, e.meta)
             if (actual != expected) {
                 mismatches += Mismatch(Kind.STATE, e.x, e.y, e.z, "dump $expected, reader $actual")
             }
@@ -200,7 +200,7 @@ object DumpVerifier {
                         e.z,
                         "dump te=${if (e.hasTileEntity) e.tileEntityId ?: "{}" else "null"}, reader ${be?.id ?: "none"}",
                     )
-            } else if (be != null && e.tileEntityId != null && Key.parse(e.tileEntityId) != be.id) {
+            } else if (be != null && e.tileEntityId != null && LegacyBlockEntities.modernId(e.tileEntityId) != be.id) {
                 mismatches += Mismatch(Kind.TILE_ENTITY_ID, e.x, e.y, e.z, "dump ${e.tileEntityId}, reader ${be.id}")
             }
         }
