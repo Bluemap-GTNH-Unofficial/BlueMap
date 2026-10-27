@@ -75,6 +75,8 @@ object CoverageReport {
     }
 
     fun classify(pack: ResourcePack, state: BlockState): Status {
+        // the block's own blockstate file (MissingBlockStates maps absent modded ids to bluemap:missing)
+        if (pack.blockStates[state.id] == null) return Status.NO_BLOCKSTATE
         val resource = pack.getBlockState(state) ?: return Status.NO_BLOCKSTATE
         var variants = 0
         var resolved = 0

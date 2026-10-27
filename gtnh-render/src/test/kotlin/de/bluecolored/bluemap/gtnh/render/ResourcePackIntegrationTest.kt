@@ -32,6 +32,7 @@ import de.bluecolored.bluemap.core.world.BlockState
 import de.bluecolored.bluemap.gtnh.legacy.ResourceKeys
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -111,6 +112,7 @@ class ResourcePackIntegrationTest {
             """.trimIndent(),
         )
         file("assets/~mod/models/block/cube.json", cube)
+        file("assets/bluemap/blockstates/missing.json", """{"variants": {"": {"renderer": "bluemap:missing", "model": "bluemap:block/missing"}}}""")
         png("assets/~mod/textures/block/top.png", 0x00FF00)
         png("assets/~mod/textures/block/side.png", 0x0000FF)
         png("assets/~mod/textures/block/extra.png", 0xFF0000)
@@ -135,6 +137,10 @@ class ResourcePackIntegrationTest {
         assertEquals(CoverageReport.Status.FALLBACK, CoverageReport.classify(pack, state("~mod", "thing", 3)))
         assertEquals(CoverageReport.Status.MISSING_MODEL, CoverageReport.classify(pack, state("~mod", "thing", 4)))
         assertEquals(CoverageReport.Status.NO_BLOCKSTATE, CoverageReport.classify(pack, state("~mod", "other", 0)))
+        // ... but it is drawn as BlueMap's missing block instead of nothing; vanilla ids are left alone
+        val missing = requireNotNull(pack.blockStates[ResourcePack.MISSING_BLOCK_STATE])
+        assertSame(missing, pack.getBlockState(state("~mod", "other", 0)))
+        assertEquals(null, pack.getBlockState(BlockState(Key("minecraft", "not_a_block"))))
 
         val variants = ArrayList<Key>()
         pack.getBlockState(state("~mod", "thing", 0))!!.forEach(state("~mod", "thing", 0), 0, 0, 0) { variants.add(it.model) }
