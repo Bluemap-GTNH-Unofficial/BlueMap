@@ -37,8 +37,9 @@ fun interface LegacyBiomeMapper {
 /**
  * Resolves legacy biome ids through a key lookup (normally the loaded `DataPack`):
  * explicit [overrides] first (e.g. a runtime biome dump of the server), then the vanilla 1.7.10 id table,
- * each key tried with its current (1.18+) name first and its 1.13 name second.
- * Unknown ids (modded biomes) resolve to [fallbackKey], or [Biome.DEFAULT] if that is not available either.
+ * each key tried with its current (1.18+) name first and its 1.13 name second, then [runtimeKey]
+ * (`gtnh:biome_<id>`, written as a datapack biome by the server mod for non-vanilla ids).
+ * Ids none of these resolve go to [fallbackKey], or [Biome.DEFAULT] if that is not available either.
  */
 class VanillaLegacyBiomeMapper
     @JvmOverloads
@@ -58,8 +59,8 @@ class VanillaLegacyBiomeMapper
 
         private fun resolve(id: Int): Biome {
             overrides[id]?.let { key -> resolveKey(key)?.let { return it } }
-            val key = legacyKey(id) ?: return fallback
-            return resolveKey(key) ?: fallback
+            legacyKey(id)?.let { key -> resolveKey(key)?.let { return it } }
+            return lookup(runtimeKey(id)) ?: fallback
         }
 
         private fun resolveKey(key: Key): Biome? {
@@ -186,6 +187,10 @@ class VanillaLegacyBiomeMapper
             /** The 1.13 key of a vanilla 1.7.10 biome id, or null if the id is not a vanilla biome. */
             @JvmStatic
             fun legacyKey(id: Int): Key? = if (id in LEGACY_KEYS.indices) LEGACY_KEYS[id] else null
+
+            /** The datapack key under which the server mod publishes a (non-vanilla) runtime biome: `gtnh:biome_<id>`. */
+            @JvmStatic
+            fun runtimeKey(id: Int): Key = Key("gtnh", "biome_$id")
 
             /** The current (1.18+) key of a 1.13 biome key, or the key itself if it was not renamed. */
             @JvmStatic

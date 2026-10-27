@@ -108,6 +108,11 @@ class RegistryAndMappingTest {
         // overrides (e.g. a runtime biome dump) win
         val overridden = VanillaLegacyBiomeMapper({ key -> TestBiome(key) }, mapOf(72 to Key("gtnh", "some_biome")))
         assertEquals(Key("gtnh", "some_biome"), overridden.biome(72).key)
+
+        // non-vanilla ids resolve to the server mod's runtime datapack biome gtnh:biome_<id> when it exists
+        val runtime = VanillaLegacyBiomeMapper({ key -> if (key.namespace == "gtnh" || key.value == "plains") TestBiome(key) else null })
+        assertEquals(Key("gtnh", "biome_72"), runtime.biome(72).key)
+        assertEquals(Key.minecraft("plains"), runtime.biome(1).key)
     }
 
     @Test

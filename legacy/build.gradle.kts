@@ -38,3 +38,22 @@ tasks.register<JavaExec>("verifyDump") {
     mainClass = "de.bluecolored.bluemap.gtnh.legacy.LegacyDumpVerifier"
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
 }
+
+/**
+ * Vanilla flattening oracle: `./gradlew :legacy:compareFlattening --args="<1.7.10-world> <1.13.2-world> [--box ...] [--labels manifest.json]"`
+ * (worlds from `src/test/python/oracle_world.py`, default `<workspace>/out/flattening-oracle`).
+ */
+tasks.register<JavaExec>("compareFlattening") {
+    group = "verification"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass = "de.bluecolored.bluemap.gtnh.legacy.FlatteningComparator"
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
+}
+
+/** Block states without a model: `./gradlew :legacy:modelCoverage --args="<world> <dimension> <resource-pack-root>..."` */
+tasks.register<JavaExec>("modelCoverage") {
+    group = "verification"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass = "de.bluecolored.bluemap.gtnh.legacy.ModelCoverage"
+    javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
+}

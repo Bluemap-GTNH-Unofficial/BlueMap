@@ -8,6 +8,7 @@ logs/
 run/
 runs/
 node_modules/
+__pycache__/
 
 .classpath
 .project

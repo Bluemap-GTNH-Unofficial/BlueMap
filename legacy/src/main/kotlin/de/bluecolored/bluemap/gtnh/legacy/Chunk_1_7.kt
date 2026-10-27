@@ -35,8 +35,13 @@ import java.util.function.Consumer
 
 /**
  * A Minecraft 1.7.10 Anvil chunk (vanilla, NotEnoughIDs or EndlessIDs/ChunkAPI layout), see [LegacyChunkLoader].
+ *
+ * Blocks whose palette entry has a [LegacyBlockFixer] are resolved lazily on first access (with [neighbours] for
+ * positions outside this chunk) and cached per section, so only the affected positions cost anything.
  */
 class Chunk_1_7 internal constructor(
+    private val chunkX: Int,
+    private val chunkZ: Int,
     private val generated: Boolean,
     private val hasLightData: Boolean,
     private val inhabitedTime: Long,
@@ -47,8 +52,25 @@ class Chunk_1_7 internal constructor(
     private val blockEntities: Map<Long, BlockEntity>,
     private val biomes: LegacyBiomeMapper,
     private val skyLight: Int,
+    private val neighbours: LegacyBlockAccess,
 ) : Chunk {
     private val sectionMax: Int = if (sections.isEmpty()) sectionMin else sectionMin + sections.size - 1
+
+    /** Block access for fixers: this chunk directly, everything else through [neighbours]. */
+    internal val blocks: LegacyBlockAccess =
+        object : LegacyBlockAccess {
+            override fun baseState(
+                x: Int,
+                y: Int,
+                z: Int,
+            ): BlockState = if (contains(x, z)) getBaseBlockState(x, y, z) else neighbours.baseState(x, y, z)
+
+            override fun state(
+                x: Int,
+                y: Int,
+                z: Int,
+            ): BlockState = if (contains(x, z)) getBlockState(x, y, z) else neighbours.state(x, y, z)
+        }
 
     override fun isGenerated(): Boolean = generated
 
@@ -64,7 +86,19 @@ class Chunk_1_7 internal constructor(
         x: Int,
         y: Int,
         z: Int,
-    ): BlockState = section(y shr 4)?.blockState(index(x, y, z)) ?: BlockState.AIR
+    ): BlockState = section(y shr 4)?.state(index(x, y, z), x, y, z, this) ?: BlockState.AIR
+
+    /** The mapped state before fixers (see [LegacyBlockAccess.baseState]). */
+    fun getBaseBlockState(
+        x: Int,
+        y: Int,
+        z: Int,
+    ): BlockState = section(y shr 4)?.baseState(index(x, y, z)) ?: BlockState.AIR
+
+    private fun contains(
+        x: Int,
+        z: Int,
+    ): Boolean = x shr 4 == chunkX && z shr 4 == chunkZ
 
     /** The raw legacy biome id at the column, or -1 if the chunk has no biome data. */
     fun getBiomeId(
@@ -142,7 +176,8 @@ class Chunk_1_7 internal constructor(
 
 /**
  * One 16x16x16 section with its blocks already resolved to a palette of [BlockState]s,
- * so lookups are a single array access without allocation.
+ * so lookups are a single array access without allocation. Palette entries with a [LegacyBlockFixer]
+ * ([fixers] non-null) are resolved per position on first access and cached in [resolved].
  */
 internal class LegacySection(
     val sectionY: Int,
@@ -152,15 +187,38 @@ internal class LegacySection(
     private val largeIndices: CharArray?,
     private val blockLight: ByteArray,
     private val skyLight: ByteArray,
+    private val fixers: Array<LegacyBlockFixer?>?,
 ) {
+    // benign race: resolution is idempotent, a lost write only costs a recomputation
+    @Volatile
+    private var resolved: Array<BlockState?>? = null
+
     val hasLightData: Boolean get() = skyLight.size >= LIGHT_BYTES || blockLight.size >= LIGHT_BYTES
 
-    fun blockState(index: Int): BlockState =
+    private fun paletteIndex(index: Int): Int =
         when {
-            smallIndices != null -> palette[smallIndices[index].toInt() and 0xFF]
-            largeIndices != null -> palette[largeIndices[index].code]
-            else -> palette[0]
+            smallIndices != null -> smallIndices[index].toInt() and 0xFF
+            largeIndices != null -> largeIndices[index].code
+            else -> 0
         }
+
+    fun baseState(index: Int): BlockState = palette[paletteIndex(index)]
+
+    fun state(
+        index: Int,
+        x: Int,
+        y: Int,
+        z: Int,
+        chunk: Chunk_1_7,
+    ): BlockState {
+        val p = paletteIndex(index)
+        val fixer = fixers?.get(p) ?: return palette[p]
+        val cache = resolved ?: arrayOfNulls<BlockState>(BLOCKS).also { resolved = it }
+        cache[index]?.let { return it }
+        val fixed = fixer.fix(palette[p], x, y, z, chunk.blocks, chunk.getBlockEntity(x, y, z))
+        cache[index] = fixed
+        return fixed
+    }
 
     fun lightData(
         index: Int,
@@ -178,5 +236,6 @@ internal class LegacySection(
 
     private companion object {
         const val LIGHT_BYTES = 2048
+        const val BLOCKS = 4096
     }
 }

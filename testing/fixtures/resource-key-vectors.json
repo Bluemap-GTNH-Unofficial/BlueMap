@@ -1,0 +1,130 @@
+{
+  "description": "Golden vectors for resource-key normalization N (plan D18, contract C1). Split the FML registry name at the FIRST ':' and apply N to each part: keep [a-z0-9_.-]; uppercase ASCII X -> '~'+lowercase(X); other code point c <= 0xFF -> '!'+2 lowercase hex digits; c > 0xFF -> '!u'+4 lowercase hex digits (code points above 0xFFFF: one '!u'+4 hex per UTF-16 surrogate).",
+  "vectors": [
+    {
+      "input": "BiomesOPlenty:colorizedLeaves2",
+      "namespace": "~biomes~o~plenty",
+      "value": "colorized~leaves2"
+    },
+    {
+      "input": "ProjRed|Exploration:projectred.exploration.ore",
+      "namespace": "~proj~red!7c~exploration",
+      "value": "projectred.exploration.ore"
+    },
+    {
+      "input": "gregtech:gt.blockcasings2",
+      "namespace": "gregtech",
+      "value": "gt.blockcasings2"
+    },
+    {
+      "input": "minecraft:stone",
+      "namespace": "minecraft",
+      "value": "stone"
+    },
+    {
+      "input": "minecraft:double_plant",
+      "namespace": "minecraft",
+      "value": "double_plant"
+    },
+    {
+      "input": "IC2:blockMachine",
+      "namespace": "~i~c2",
+      "value": "block~machine"
+    },
+    {
+      "input": "ic2:blockmachine",
+      "namespace": "ic2",
+      "value": "blockmachine"
+    },
+    {
+      "input": "Thaumcraft:blockCosmeticSolid",
+      "namespace": "~thaumcraft",
+      "value": "block~cosmetic~solid"
+    },
+    {
+      "input": "thaumcraft:blockcosmeticsolid",
+      "namespace": "thaumcraft",
+      "value": "blockcosmeticsolid"
+    },
+    {
+      "input": "Foo:Bar",
+      "namespace": "~foo",
+      "value": "~bar"
+    },
+    {
+      "input": "foo:bar",
+      "namespace": "foo",
+      "value": "bar"
+    },
+    {
+      "input": "foo:BAR",
+      "namespace": "foo",
+      "value": "~b~a~r"
+    },
+    {
+      "input": "FOO:bar",
+      "namespace": "~f~o~o",
+      "value": "bar"
+    },
+    {
+      "input": "appliedenergistics2:tile.BlockQuartzGlass",
+      "namespace": "appliedenergistics2",
+      "value": "tile.~block~quartz~glass"
+    },
+    {
+      "input": "TConstruct:GlassPane",
+      "namespace": "~t~construct",
+      "value": "~glass~pane"
+    },
+    {
+      "input": "bartworks:BW_GlasBlocks",
+      "namespace": "bartworks",
+      "value": "~b~w_~glas~blocks"
+    },
+    {
+      "input": "Mod Name:block name",
+      "namespace": "~mod!20~name",
+      "value": "block!20name"
+    },
+    {
+      "input": "mod:with~tilde",
+      "namespace": "mod",
+      "value": "with!7etilde"
+    },
+    {
+      "input": "mod:with!bang",
+      "namespace": "mod",
+      "value": "with!21bang"
+    },
+    {
+      "input": "mod:a/b",
+      "namespace": "mod",
+      "value": "a!2fb"
+    },
+    {
+      "input": "mod:colon:inside",
+      "namespace": "mod",
+      "value": "colon!3ainside"
+    },
+    {
+      "input": "mod:ä",
+      "namespace": "mod",
+      "value": "!e4"
+    },
+    {
+      "input": "mod:€",
+      "namespace": "mod",
+      "value": "!u20ac"
+    },
+    {
+      "input": "mod:😀",
+      "namespace": "mod",
+      "value": "!ud83d!ude00"
+    },
+    {
+      "input": "mod:",
+      "namespace": "mod",
+      "value": ""
+    }
+  ]
+}

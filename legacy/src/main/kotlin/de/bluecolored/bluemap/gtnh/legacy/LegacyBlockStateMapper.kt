@@ -39,11 +39,17 @@ fun interface LegacyBlockStateMapper {
         id: Int,
         meta: Int,
     ): BlockState
+
+    /**
+     * The fixer that completes a mapped [state] from its neighbours and/or block entity, or null if the mapped state
+     * is already final. Called once per distinct state in a section.
+     */
+    fun fixer(state: BlockState): LegacyBlockFixer? = null
 }
 
 /**
  * Identity mapping of the FML registry:
- * `BlockState(Key(modid, name), {meta: "<meta>"})` with the registry name verbatim,
+ * `BlockState(Key(N(modid), N(name)), {meta: "<meta>"})` with the registry name normalized by [ResourceKeys] (contract C1),
  * id 0 -> [BlockState.AIR], unregistered ids -> `bluemap-gtnh:unknown[id=<id>,meta=<meta>]`.
  */
 class RegistryBlockStateMapper(
@@ -66,7 +72,7 @@ class RegistryBlockStateMapper(
         val name =
             registry.name(id)
                 ?: return BlockState(UNKNOWN_KEY, mapOf("id" to id.toString(), "meta" to meta.toString()))
-        return BlockState(Key.parse(name), mapOf(META to meta.toString()))
+        return identityState(name, meta)
     }
 
     companion object {
@@ -74,5 +80,19 @@ class RegistryBlockStateMapper(
 
         @JvmField
         val UNKNOWN_KEY: Key = Key("bluemap-gtnh", "unknown")
+
+        /** The normalized resource key of an FML registry name `modid:name` (contract C1). */
+        @JvmStatic
+        fun resourceKey(registryName: String): Key {
+            val (namespace, value) = ResourceKeys.normalizeRegistryName(registryName)
+            return Key(namespace, value)
+        }
+
+        /** The identity block state of a registry name and meta: `N(modid):N(name)[meta=<meta>]`. */
+        @JvmStatic
+        fun identityState(
+            registryName: String,
+            meta: Int,
+        ): BlockState = BlockState(resourceKey(registryName), mapOf(META to meta.toString()))
     }
 }

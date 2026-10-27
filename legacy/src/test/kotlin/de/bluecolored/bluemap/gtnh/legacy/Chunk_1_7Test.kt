@@ -145,7 +145,8 @@ class Chunk_1_7Test {
         assertEquals(15 to 0, chunk.light(5, 19, 5))
 
         assertEquals(20, chunk.getWorldSurfaceY(5, 3))
-        assertEquals(Key("minecraft", "Chest"), chunk.getBlockEntity(1, 2, 3)!!.id)
+        // legacy block entity ids are read as their modern keys
+        assertEquals(Key.minecraft("chest"), chunk.getBlockEntity(1, 2, 3)!!.id)
         assertNull(chunk.getBlockEntity(0, 2, 3))
     }
 
@@ -159,7 +160,7 @@ class Chunk_1_7Test {
 
     @Test
     fun vanillaChunk() {
-        val mapper = VanillaLegacyBiomeMapper({ key -> TestBiome(key) })
+        val mapper = VanillaLegacyBiomeMapper({ key -> if (key.namespace == "minecraft") TestBiome(key) else null })
         val chunk = loadChunk("vanilla_synthetic.zlib", mapper) as Chunk_1_7
 
         assertFalse(chunk.isGenerated)
