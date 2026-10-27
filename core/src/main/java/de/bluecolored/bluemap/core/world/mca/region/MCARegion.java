@@ -93,7 +93,7 @@ public class MCARegion<T> implements Region<T> {
             offset |= (header[1] & 0xFF) << 8;
             offset |= header[2] & 0xFF;
             offset *= 4096;
-            int size = (header[3] & 0xFF) * 4096;
+            int size = chunkDataSize(channel, offset, header[3] & 0xFF);
 
             if (size <= 0) return chunkLoader.emptyChunk();
 
@@ -130,8 +130,8 @@ public class MCARegion<T> implements Region<T> {
                 for (int z = 0; z < 32; z++) {
                     int xzChunk = (z & 0b11111) << 5 | (x & 0b11111);
 
-                    int size = (header[xzChunk * 4 + 3] & 0xFF) * 4096;
-                    if (size <= 0) continue;
+                    int sectorCount = header[xzChunk * 4 + 3] & 0xFF;
+                    if (sectorCount <= 0) continue;
 
                     int chunkX = chunkStartX + x;
                     int chunkZ = chunkStartZ + z;
@@ -150,6 +150,7 @@ public class MCARegion<T> implements Region<T> {
                         offset |= header[i] & 0xFF;
                         offset *= 4096;
 
+                        int size = chunkDataSize(channel, offset, sectorCount);
                         if (chunkDataBuffer == null || chunkDataBuffer.length < size)
                             chunkDataBuffer = new byte[size];
 
@@ -237,6 +238,22 @@ public class MCARegion<T> implements Region<T> {
 
     public static String getRegionFileName(int regionX, int regionZ) {
         return "r." + regionX + "." + regionZ + FILE_SUFFIX;
+    }
+
+    /**
+     * Returns the number of bytes to read for a chunk, including the 4-byte length prefix.<br>
+     * A sector count of 255 might be a saturated count: Hodgepodge's <code>remove2MBChunkLimit</code> (GTNH, default on)
+     * writes 255 for any chunk needing 255 or more sectors, so the real size has to be taken from the length prefix.
+     */
+    private static int chunkDataSize(FileChannel channel, long offset, int sectorCount) throws IOException {
+        int size = sectorCount * 4096;
+        if (sectorCount < 255) return size;
+
+        ByteBuffer lengthPrefix = ByteBuffer.allocate(4);
+        readFully(channel.position(offset), lengthPrefix, 0, 4);
+        int length = lengthPrefix.getInt(0);
+        if (length <= 0 || length > Integer.MAX_VALUE - 4) return size;
+        return Math.max(size, length + 4);
     }
 
     @SuppressWarnings("SameParameterValue")
