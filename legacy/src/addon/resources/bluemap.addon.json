@@ -1,0 +1,4 @@
+{
+  "id": "bluemap-gtnh-legacy",
+  "entrypoint": "de.bluecolored.bluemap.gtnh.legacy.GtnhLegacyAddon"
+}
