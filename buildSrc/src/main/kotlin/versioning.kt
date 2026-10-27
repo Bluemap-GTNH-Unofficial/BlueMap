@@ -2,6 +2,19 @@ import org.gradle.api.Project
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import java.util.Properties
+
+/**
+ * Version of the GTNH fork: `<bluemapUpstreamVersion>-gtnh.<gtnhRevision>` from the root `gradle.properties`
+ * (read from the file, so it is the same when this build is included by another one).
+ */
+fun Project.gtnhVersion(): String {
+    val properties = Properties()
+    rootDir.resolve("gradle.properties").reader().use(properties::load)
+    val upstream = properties.getProperty("bluemapUpstreamVersion") ?: error("bluemapUpstreamVersion missing in gradle.properties")
+    val revision = properties.getProperty("gtnhRevision") ?: error("gtnhRevision missing in gradle.properties")
+    return "$upstream-gtnh.$revision"
+}
 
 fun Project.gitHash(): String {
     return runCommand("git rev-parse --verify HEAD", "-")
@@ -10,21 +23,6 @@ fun Project.gitHash(): String {
 fun Project.gitClean(): Boolean {
     if (runCommand("git update-index --refresh", "NOT-CLEAN").equals("NOT-CLEAN")) return false;
     return runCommand("git diff-index HEAD --", "NOT-CLEAN").isEmpty();
-}
-
-fun Project.gitVersion(): String {
-    val lastTag = if (runCommand("git tag", "").isEmpty()) "" else runCommand("git describe --tags --abbrev=0", "")
-    val lastVersion = if (lastTag.isEmpty()) "0.0" else lastTag.substring(1) // remove the leading 'v'
-    val commits = runCommand("git rev-list --count $lastTag..HEAD", "0")
-    val branch = runCommand("git branch --show-current", "master")
-    val gitVersion = lastVersion +
-            (if (branch == "master" || branch.isEmpty()) "" else "-${branch.replace('/', '.')}") +
-            (if (commits == "0") "" else "-$commits") +
-            (if (gitClean()) "" else "-dirty")
-
-    logger.lifecycle("${project.name} version: $gitVersion")
-
-    return gitVersion
 }
 
 fun Project.gitIsRelease(): Boolean {

@@ -1,6 +1,7 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+import java.util.Properties
 
 plugins {
     id("com.gtnewhorizons.gtnhconvention")
@@ -8,8 +9,13 @@ plugins {
     id("org.jetbrains.kotlin.jvm")
 }
 
-// Git-based versioning is disabled (this project lives in a subdirectory of the BlueMap repo).
-val modVersion = "0.1.0"
+// Same version as the enclosing BlueMap build (`<bluemapUpstreamVersion>-gtnh.<gtnhRevision>`, BlueMap's gradle.properties).
+// Git-based versioning of GTNHGradle is disabled (this project lives in a subdirectory of the BlueMap repo).
+val modVersion =
+    Properties().let { properties ->
+        file("../../gradle.properties").reader().use(properties::load)
+        "${properties.getProperty("bluemapUpstreamVersion")}-gtnh.${properties.getProperty("gtnhRevision")}"
+    }
 extra["modVersion"] = modVersion
 version = modVersion
 

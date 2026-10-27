@@ -104,6 +104,7 @@ class GtnhServer(
             Logger.global.logInfo("Loading...")
             try {
                 ThreadedFileIOBase.threadedIOInstance.waitForFinish()
+                createMissingMapConfigs()
                 plugin.load()
                 if (plugin.isLoaded) Logger.global.logInfo("Loaded!")
             } catch (e: IOException) {
@@ -224,6 +225,15 @@ class GtnhServer(
         val regionFolder = dimensionFolder.resolve("region")
         if (!Files.isDirectory(regionFolder)) return false
         return Files.list(regionFolder).use { files -> files.anyMatch { REGION_FILE.matches(it.name) } }
+    }
+
+    /** D17 on every start: map-configs for dimensions that got region files since the last start (see [MapConfigAutoCreator]). */
+    private fun createMissingMapConfigs() {
+        try {
+            MapConfigAutoCreator(getConfigFolder()).createMissing(getLoadedServerWorlds())
+        } catch (e: IOException) {
+            Logger.global.logError("Failed to create map-configs for new dimensions", e)
+        }
     }
 
     private fun writeRuntimeDataPack() {

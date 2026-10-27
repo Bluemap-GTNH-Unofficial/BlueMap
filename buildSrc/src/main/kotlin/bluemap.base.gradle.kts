@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "de.bluecolored"
-version = gitVersion()
+version = gtnhVersion()
 
 repositories {
     maven ("https://repo.bluecolored.de/releases") {

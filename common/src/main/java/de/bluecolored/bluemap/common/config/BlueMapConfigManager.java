@@ -237,19 +237,19 @@ public class BlueMapConfigManager implements BlueMapConfiguration {
                     Path worldFolder = Path.of("world");
                     Files.writeString(
                             configManager.resolveConfigFile(MAPS_CONFIG_FOLDER_NAME + "/overworld"),
-                            createOverworldMapTemplate("Overworld", worldFolder,
+                            createOverworldMapTemplate(configManager, "Overworld", worldFolder,
                                     DataPack.DIMENSION_OVERWORLD, DataPack.DIMENSION_TYPE_OVERWORLD, 0).build(),
                             StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING
                     );
                     Files.writeString(
                             configManager.resolveConfigFile(MAPS_CONFIG_FOLDER_NAME + "/nether"),
-                            createNetherMapTemplate("Nether", worldFolder,
+                            createNetherMapTemplate(configManager, "Nether", worldFolder,
                                     DataPack.DIMENSION_THE_NETHER, DataPack.DIMENSION_TYPE_THE_NETHER, 100).build(),
                             StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING
                     );
                     Files.writeString(
                             configManager.resolveConfigFile(MAPS_CONFIG_FOLDER_NAME + "/end"),
-                            createEndMapTemplate("End", worldFolder,
+                            createEndMapTemplate(configManager, "End", worldFolder,
                                     DataPack.DIMENSION_THE_END, DataPack.DIMENSION_TYPE_THE_END, 200).build(),
                             StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING
                     );
@@ -266,7 +266,6 @@ public class BlueMapConfigManager implements BlueMapConfiguration {
                     for (var world : overworldFirstAutoConfigWorlds) {
                         Path worldFolder = world.getWorldFolder().normalize();
                         Key dimension = world.getDimension();
-                        Key dimensionType = world.getDimensionType().orElse(dimension);
 
                         String dimensionName = dimension.getNamespace().equals("minecraft") ?
                                 dimension.getValue() : dimension.getFormatted();
@@ -285,15 +284,7 @@ public class BlueMapConfigManager implements BlueMapConfiguration {
                         String name = worldFolder.getFileName() + " (" + dimensionName + ")";
                         if (i > 1) name = name + " (" + i + ")";
 
-                        ConfigTemplate template = switch (world.getDimension().getFormatted()) {
-                            case "minecraft:overworld" -> createOverworldMapTemplate(name, worldFolder, dimension, dimensionType, i - 1);
-                            case "minecraft:the_nether" -> createNetherMapTemplate(name, worldFolder, dimension, dimensionType, i - 1 + 100);
-                            case "minecraft:the_end" -> createEndMapTemplate(name, worldFolder, dimension, dimensionType, i - 1 + 200);
-                            default -> createOverworldMapTemplate(name, worldFolder, dimension, dimensionType, i - 1 + 300);
-                        };
-                        world.getWorldLoader().ifPresent(loader -> template
-                                .setConditional("display-loader", true)
-                                .setVariable("loader", loader.getFormatted()));
+                        ConfigTemplate template = createMapConfigTemplate(configManager, world, name, i - 1);
 
                         Files.writeString(
                                 configFile,
@@ -394,7 +385,28 @@ public class BlueMapConfigManager implements BlueMapConfiguration {
         return id.replaceAll("\\W", "_");
     }
 
-    private ConfigTemplate createOverworldMapTemplate(String name, Path worldFolder, Key dimension, Key dimensionType, int sorting) throws IOException {
+    /**
+     * Creates the template of the auto-generated map-config for a world.
+     * @param index 0 for the first map of a world, counting up for further maps of the same world
+     */
+    public static ConfigTemplate createMapConfigTemplate(ConfigManager configManager, ServerWorld world, String name, int index) throws IOException {
+        Path worldFolder = world.getWorldFolder().normalize();
+        Key dimension = world.getDimension();
+        Key dimensionType = world.getDimensionType().orElse(dimension);
+
+        ConfigTemplate template = switch (dimension.getFormatted()) {
+            case "minecraft:overworld" -> createOverworldMapTemplate(configManager, name, worldFolder, dimension, dimensionType, index);
+            case "minecraft:the_nether" -> createNetherMapTemplate(configManager, name, worldFolder, dimension, dimensionType, index + 100);
+            case "minecraft:the_end" -> createEndMapTemplate(configManager, name, worldFolder, dimension, dimensionType, index + 200);
+            default -> createOverworldMapTemplate(configManager, name, worldFolder, dimension, dimensionType, index + 300);
+        };
+        world.getWorldLoader().ifPresent(loader -> template
+                .setConditional("display-loader", true)
+                .setVariable("loader", loader.getFormatted()));
+        return template;
+    }
+
+    private static ConfigTemplate createOverworldMapTemplate(ConfigManager configManager, String name, Path worldFolder, Key dimension, Key dimensionType, int sorting) throws IOException {
         return configManager.loadConfigTemplate(MAP_STORAGE_CONFIG_NAME)
                 .setVariable("name", name)
                 .setVariable("sorting", "" + sorting)
@@ -409,7 +421,7 @@ public class BlueMapConfigManager implements BlueMapConfiguration {
                 .setConditional("remove-nether-ceiling", false);
     }
 
-    private ConfigTemplate createNetherMapTemplate(String name, Path worldFolder, Key dimension, Key dimensionType, int sorting) throws IOException {
+    private static ConfigTemplate createNetherMapTemplate(ConfigManager configManager, String name, Path worldFolder, Key dimension, Key dimensionType, int sorting) throws IOException {
         return configManager.loadConfigTemplate(MAP_STORAGE_CONFIG_NAME)
                 .setVariable("name", name)
                 .setVariable("sorting", "" + sorting)
@@ -424,7 +436,7 @@ public class BlueMapConfigManager implements BlueMapConfiguration {
                 .setConditional("remove-nether-ceiling", true);
     }
 
-    private ConfigTemplate createEndMapTemplate(String name, Path worldFolder, Key dimension, Key dimensionType, int sorting) throws IOException {
+    private static ConfigTemplate createEndMapTemplate(ConfigManager configManager, String name, Path worldFolder, Key dimension, Key dimensionType, int sorting) throws IOException {
         return configManager.loadConfigTemplate(MAP_STORAGE_CONFIG_NAME)
                 .setVariable("name", name)
                 .setVariable("sorting", "" + sorting)
