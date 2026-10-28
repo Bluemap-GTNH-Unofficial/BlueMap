@@ -107,6 +107,17 @@ abstract class ModBlockRenderer(
         return drawn
     }
 
+    /**
+     * Draws the variant's own model (the exporter's static capture) besides the renderer's quads, for blocks that
+     * render as a normal block and have a TESR on top. Call it after the [emit]s: it finishes the map colour.
+     */
+    protected fun renderOwnModel(block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color) {
+        // a model transform must only move the model's own faces
+        blockModel.initialize()
+        renderVariantModel(block, variant, blockModel, color)
+        delegated = true
+    }
+
     private fun renderVariantModel(block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color) {
         if (quadModels?.get(variant.model) != null) {
             quadRenderer.render(block, variant, blockModel, color)
