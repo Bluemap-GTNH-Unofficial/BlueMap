@@ -345,7 +345,10 @@ class Ae2CableBusRenderer(
                 Transform.rotate(90f, 0f, 1f, 0f),
             )
 
-        /** `AEColor` (dark, medium, white) variants by ordinal; 16 = Transparent (fluix). */
+        /**
+         * `AEColor` (dark, medium, white) variants by ordinal; 16 = Transparent (fluix). Values from AE2's `AEColor`
+         * (MIT, Copyright (c) 2013 AlgorithmX2).
+         */
         private val AE_COLORS: List<Triple<Int, Int, Int>> =
             listOf(
                 Triple(0xBEBEBE, 0xDBDBDB, 0xFAFAFA),

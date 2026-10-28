@@ -98,6 +98,8 @@ internal enum class FaceShape { SOLID, MIDDLE_POLE, MIDDLE_POLE_THICK, MIDDLE_PO
  *
  * Non-vanilla (modded) blocks have no shape information here: they count as solid opaque full cubes, which is what
  * most modded blocks are (machines, casings, ores).
+ *
+ * Re-implements Minecraft 1.13 behaviour in Kotlin (Minecraft (c) Mojang AB / Microsoft); see NOTICE.md.
  */
 internal object VanillaBlockShapes {
     private fun names(vararg names: String): Set<String> = names.toSet()

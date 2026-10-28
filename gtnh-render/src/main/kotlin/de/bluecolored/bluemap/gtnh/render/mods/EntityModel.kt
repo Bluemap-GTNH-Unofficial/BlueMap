@@ -35,6 +35,8 @@ object EntityModel {
     /**
      * The six faces of a box at [x], [y], [z] (already offset by the part's rotation point) with size [dx]×[dy]×[dz],
      * texture offset [u], [v] on a [texW]×[texH] texture.
+     *
+     * Re-implements Minecraft 1.7.10 `ModelBox` (Minecraft (c) Mojang AB / Microsoft); see NOTICE.md.
      */
     fun box(
         texture: Key,
