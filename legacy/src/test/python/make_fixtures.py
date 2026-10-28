@@ -1,6 +1,6 @@
 """Regenerates the :legacy test fixtures (src/test/resources/fixtures).
 
-Usage (from the BlueMap-GTNH repo root):
+Usage (from the BlueMap repo root):
     uv run --no-project --with nbtlib python legacy/src/test/python/make_fixtures.py <path/to/gtnh-world>
 
 The world is a freshly generated GTNH 2.9.0-RC-2 world (worlds/gtnh-initial-rwg in the port workspace); it is only read.

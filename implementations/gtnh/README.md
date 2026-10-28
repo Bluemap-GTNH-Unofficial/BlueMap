@@ -10,7 +10,7 @@ GTNHGradle, `enableModernJavaSyntax = modern` (Java 25 bytecode), Kotlin Gradle 
 (if present) `:gtnh-render` come from the enclosing BlueMap build through a composite build (`includeBuild("../..")`).
 
 ```bash
-cd BlueMap-GTNH/implementations/gtnh
+cd BlueMap/implementations/gtnh
 mise exec java@temurin-25.0.5+8.0.LTS -- ./gradlew \
   -Porg.gradle.java.installations.paths=$(mise where java@zulu-8.98.0.107)/Contents/Home,$(mise where java@temurin-25.0.5+8.0.LTS)/Contents/Home \
   build

@@ -28,6 +28,7 @@ import argparse
 import gzip
 import io
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -38,9 +39,12 @@ import time
 import zlib
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[3]
-WORKSPACE = REPO.parent
-sys.path.insert(0, str(REPO / "testing/orchestrator/src"))
+REPO = HERE.parents[3]  # the BlueMap fork checkout
+WORKSPACE = pathlib.Path(os.environ["BMGTNH_WORKSPACE"]) if "BMGTNH_WORKSPACE" in os.environ else REPO.parent
+ORCHESTRATOR_SRC = WORKSPACE / "orchestrator/src"  # sibling orchestrator checkout
+if not (ORCHESTRATOR_SRC / "orchestrator/rcon.py").is_file():
+    sys.exit(f"{ORCHESTRATOR_SRC} not found: clone the orchestrator repo next to BlueMap (or set BMGTNH_WORKSPACE)")
+sys.path.insert(0, str(ORCHESTRATOR_SRC))
 from orchestrator.rcon import RconClient  # noqa: E402  (stdlib-only RCON client tuned for 1.7.10)
 
 JAVA8 = "java@zulu-8.98.0.107"
