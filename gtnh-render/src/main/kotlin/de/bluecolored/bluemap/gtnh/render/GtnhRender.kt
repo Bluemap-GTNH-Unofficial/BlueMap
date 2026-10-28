@@ -58,6 +58,8 @@ object GtnhRender {
         BlockRendererType.REGISTRY.register(QUADS)
         ResourcePack.Extension.REGISTRY.register(QuadModelExtension.TYPE)
         ResourcePack.Extension.REGISTRY.register(MissingBlockStates.TYPE)
+        de.bluecolored.bluemap.gtnh.render.gregtech.GregTechRender.register()
+        de.bluecolored.bluemap.gtnh.render.mods.ModRenderers.register()
         CoverageReport.install()
     }
 }
