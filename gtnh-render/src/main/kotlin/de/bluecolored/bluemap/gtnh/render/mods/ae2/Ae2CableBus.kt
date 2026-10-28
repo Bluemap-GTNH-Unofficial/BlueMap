@@ -40,6 +40,35 @@ class Ae2ItemStack {
         private set
 }
 
+/** The tag of an AE2 facade item: the covered block (`modid`, `itemname`, `x` = [item id, meta]). */
+class Ae2FacadeTag {
+    @field:NBTName("modid")
+    var modid: String? = null
+        private set
+
+    @field:NBTName("itemname")
+    var itemName: String? = null
+        private set
+
+    @field:NBTName("x")
+    var x: IntArray = IntArray(0)
+        private set
+}
+
+class Ae2FacadeStack {
+    @field:NBTName("tag")
+    var tag: Ae2FacadeTag? = null
+        private set
+
+    /** The covered block as `modid:name` and its meta, if the facade names it. */
+    val block: Pair<String, Int>? get() {
+        val t = tag ?: return null
+        val modid = t.modid ?: return null
+        val name = t.itemName ?: return null
+        return "$modid:$name" to (t.x.getOrNull(1) ?: 0)
+    }
+}
+
 /**
  * AE2's `TileCableBus` (`CableBusContainer.writeToNBT`): `def:<side>` is the part's item stack per ForgeDirection
  * ordinal, `def:6` (UNKNOWN) the cable in the centre. All AE2 parts are damage values of `ItemMultiPart`.
@@ -65,6 +94,36 @@ class Ae2CableBusTileEntity : MCABlockEntity() {
 
     @field:NBTName("def:6")
     private var def6: Ae2ItemStack? = null
+
+    // FacadeContainer.writeToNBT: `facade:<side>` item stacks
+    @field:NBTName("facade:0")
+    private var facade0: Ae2FacadeStack? = null
+
+    @field:NBTName("facade:1")
+    private var facade1: Ae2FacadeStack? = null
+
+    @field:NBTName("facade:2")
+    private var facade2: Ae2FacadeStack? = null
+
+    @field:NBTName("facade:3")
+    private var facade3: Ae2FacadeStack? = null
+
+    @field:NBTName("facade:4")
+    private var facade4: Ae2FacadeStack? = null
+
+    @field:NBTName("facade:5")
+    private var facade5: Ae2FacadeStack? = null
+
+    /** The block (`modid:name`, meta) of the facade on ForgeDirection [side], if any. */
+    fun facade(side: Int): Pair<String, Int>? = when (side) {
+        0 -> facade0
+        1 -> facade1
+        2 -> facade2
+        3 -> facade3
+        4 -> facade4
+        5 -> facade5
+        else -> null
+    }?.block
 
     /** The stack on ForgeDirection [side] (0..5), or the centre cable for 6. */
     fun def(side: Int): Ae2ItemStack? = when (side) {

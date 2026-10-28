@@ -273,4 +273,68 @@ class ModTileEntityRenderersTest {
         val row = kit.render(Cell(casing), Triple(1, 0, 0) to Cell(casing)).triangles
         assertNotNull(row.firstOrNull { it.texture == kit.id(Key("gregtech", "block/casing_ctm")) }, "connected quarters use the sheet")
     }
+
+    private fun ModTestKit.stoneBlock() {
+        png("assets/minecraft/textures/block/stone.png", 0x7F7F7F)
+        cubeModel("assets/minecraft/models/block/stone.json", "minecraft:block/stone")
+        file("assets/minecraft/blockstates/stone.json", """{"variants": {"": {"model": "minecraft:block/stone"}}}""")
+    }
+
+    @Test
+    fun `facade blocks named in NBT map like the legacy loader maps placed blocks`() {
+        assertEquals(de.bluecolored.bluemap.core.world.BlockState(Key.minecraft("stone")), ModelFaces.legacyState("minecraft:stone", 0))
+        assertEquals(
+            de.bluecolored.bluemap.core.world.BlockState(Key("~iron~chest", "~block~iron~chest"), mapOf("meta" to "2")),
+            ModelFaces.legacyState("IronChest:BlockIronChest", 2),
+        )
+    }
+
+    @Test
+    fun `AE2 facade is a 2 px plate with the covered block's textures`() {
+        val bus = te("BlockCableBus") {
+            name("facade:3").beginCompound()
+            name("id").value(4633.toShort()); name("Count").value(1.toByte()); name("Damage").value(0.toShort())
+            name("tag").beginCompound()
+            name("x").value(intArrayOf(1, 0)); name("modid").value("minecraft"); name("itemname").value("stone")
+            endCompound()
+            endCompound()
+        } as Ae2CableBusTileEntity
+        assertEquals("minecraft:stone" to 0, bus.facade(3))
+
+        val kit = ModTestKit(root)
+        kit.stoneBlock()
+        kit.cubeModel("assets/appliedenergistics2/models/block/bbox.json", "minecraft:block/stone")
+        kit.file("assets/appliedenergistics2/blockstates/tile.~block~cable~bus.json", """{"variants": {"": {"renderer": "gtnh:ae2_cable_bus", "model": "appliedenergistics2:block/bbox"}}}""")
+        val tris = kit.render(Cell(state("appliedenergistics2:tile.~block~cable~bus", 0), bus)).triangles
+        assertEquals(12, tris.size)
+        assertTrue(tris.all { it.texture == kit.id(Key.minecraft("block/stone")) })
+        val zs = tris.flatMap { t -> (0 until 3).map { t.positions[it * 3 + 2] } }
+        assertEquals(14f / 16, zs.min(), 1e-4f)
+        assertEquals(1f, zs.max(), 1e-4f)
+    }
+
+    @Test
+    fun `EnderIO bundle with a facade is drawn as the facade block`() {
+        val bundle = te("blockConduitBundleTileEntity") {
+            name("conduits").beginList(1, TagType.COMPOUND)
+            beginCompound()
+            name("conduitType").value("crazypants.enderio.conduit.item.ItemConduit")
+            name("conduit").beginCompound()
+            name("connections").value(intArrayOf(5))
+            endCompound()
+            endCompound()
+            endList()
+            name("facadeId").value("minecraft:stone")
+            name("facadeMeta").value(0)
+            name("facadeType").value("BASIC")
+        } as EioConduitBundleTileEntity
+        val kit = ModTestKit(root)
+        kit.stoneBlock()
+        kit.cubeModel("assets/~ender~i~o/models/block/bbox.json", "minecraft:block/stone")
+        kit.file("assets/~ender~i~o/blockstates/block~conduit~bundle.json", """{"variants": {"": {"renderer": "gtnh:enderio_conduit", "model": "~ender~i~o:block/bbox"}}}""")
+        val result = kit.render(Cell(state("~ender~i~o:block~conduit~bundle", 0), bundle))
+        assertEquals(12, result.triangles.size, "the stone cube, no conduit")
+        assertTrue(result.triangles.all { it.texture == kit.id(Key.minecraft("block/stone")) })
+        assertTrue(result.color.a > 0, "the facade's map colour is kept")
+    }
 }
