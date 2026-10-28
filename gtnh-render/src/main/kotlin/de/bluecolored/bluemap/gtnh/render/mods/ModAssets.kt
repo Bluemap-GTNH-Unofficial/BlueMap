@@ -38,8 +38,9 @@ import kotlin.io.path.isRegularFile
 
 /**
  * Loads the exporter's mod data (`gtnh/mods/`): the raw asset index `assets.json` (jar asset name -> path in the
- * pack), Chisel's CTM table `chisel.json`, MyCTMLib's `myctmlib.json`, and the Wavefront models the index lists.
- * Each file comes from the highest-priority pack that has it. Only textures a renderer can use enter the atlas.
+ * pack), Chisel's CTM table `chisel.json`, MyCTMLib's `myctmlib.json`, Thaumcraft's aspect colours `aspects.json`,
+ * and the Wavefront / JSON models the index lists. Each file comes from the highest-priority pack that has it. Only
+ * textures a renderer can use enter the atlas.
  */
 class ModAssets(private val pack: ResourcePack) : ResourcePackExtension {
     @Volatile
@@ -55,30 +56,49 @@ class ModAssets(private val pack: ResourcePack) : ResourcePackExtension {
 
     private val objModels = HashMap<String, ObjModel>()
 
+    private val jsonModels = HashMap<String, JsonObject>()
+
+    /** Thaumcraft aspect tag -> colour (`Aspect.getColor()`, `0xRRGGBB`) of every registered aspect. */
+    @Volatile
+    var aspectColors: Map<String, Int> = emptyMap()
+        private set
+
     /** The texture key of a raw jar asset (`<domain>:textures/<path>.png`), or null if the pack does not have it. */
     fun texture(raw: String): Key? = assets[raw]?.let(::textureKey)
 
     /** A Wavefront model by raw jar name (`<domain>:models/<name>.obj`). */
     fun obj(raw: String): ObjModel? = objModels[raw]
 
+    /** A JSON (block) model by raw jar name (`<domain>:models/<name>.json`). */
+    fun json(raw: String): JsonObject? = jsonModels[raw]
+
     override fun loadResources(roots: Iterable<Path>) {
         var index: JsonObject? = null
         var chiselJson: JsonObject? = null
         var myCtmJson: JsonObject? = null
+        var aspectsJson: JsonObject? = null
         val objs = HashMap<String, ObjModel>()
+        val jsons = HashMap<String, JsonObject>()
         for (root in roots) {
             pack.loadResourcePath(root) { path ->
                 val dir = path.resolve(DIR)
                 if (index == null) index = readJson(dir.resolve("assets.json"))
                 if (chiselJson == null) chiselJson = readJson(dir.resolve("chisel.json"))
                 if (myCtmJson == null) myCtmJson = readJson(dir.resolve("myctmlib.json"))
-                // Wavefront models must be read while the (zip) root is open
+                if (aspectsJson == null) aspectsJson = readJson(dir.resolve("aspects.json"))
+                // models must be read while the (zip) root is open
                 index?.getAsJsonObject("assets")?.entrySet()?.forEach { (raw, value) ->
-                    if (!raw.endsWith(".obj") || objs.containsKey(raw)) return@forEach
+                    val obj = raw.endsWith(".obj")
+                    if (!obj && !raw.endsWith(".json")) return@forEach
+                    if (objs.containsKey(raw) || jsons.containsKey(raw)) return@forEach
                     val file = path.resolve(value.asString)
                     if (!file.isRegularFile()) return@forEach
                     try {
-                        Files.newBufferedReader(file).use { objs[raw] = ObjModel.parse(it) }
+                        if (obj) {
+                            Files.newBufferedReader(file).use { objs[raw] = ObjModel.parse(it) }
+                        } else {
+                            readJson(file)?.let { jsons[raw] = it }
+                        }
                     } catch (ex: Exception) {
                         Logger.global.logWarning("Failed to read model '$file': $ex")
                     }
@@ -88,14 +108,19 @@ class ModAssets(private val pack: ResourcePack) : ResourcePackExtension {
         assets = index?.getAsJsonObject("assets")?.entrySet()?.associate { (k, v) -> k to v.asString } ?: emptyMap()
         chisel = chiselJson?.let(ChiselData::parse)
         myCtm = myCtmJson?.let(MyCtmData::parse)
+        aspectColors = aspectsJson?.getAsJsonObject("aspects")?.entrySet()
+            ?.mapNotNull { (tag, color) -> color.asString.removePrefix("#").toIntOrNull(16)?.let { tag to it } }
+            ?.toMap() ?: emptyMap()
         synchronized(objModels) {
             objModels.clear()
             objModels.putAll(objs)
+            jsonModels.clear()
+            jsonModels.putAll(jsons)
         }
         if (index != null || chiselJson != null || myCtmJson != null) {
             Logger.global.logInfo(
-                "Loaded GTNH mod data: ${assets.size} assets (${objs.size} models), " +
-                    "${chisel?.size ?: 0} Chisel CTM variants, ${myCtm?.size ?: 0} MyCTMLib textures",
+                "Loaded GTNH mod data: ${assets.size} assets (${objs.size + jsons.size} models), " +
+                    "${chisel?.size ?: 0} Chisel CTM variants, ${myCtm?.size ?: 0} MyCTMLib textures, ${aspectColors.size} aspects",
             )
         }
     }

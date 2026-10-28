@@ -36,6 +36,7 @@ import de.bluecolored.bluemap.gtnh.render.mods.enderio.EnderIoConduitRenderer
 import de.bluecolored.bluemap.gtnh.render.mods.bibliocraft.BiblioTileEntity
 import de.bluecolored.bluemap.gtnh.render.mods.chisel.ChiselCtmRenderer
 import de.bluecolored.bluemap.gtnh.render.mods.ctm.MyCtmRenderer
+import de.bluecolored.bluemap.gtnh.render.mods.addons.AddonTesrs
 import de.bluecolored.bluemap.gtnh.render.mods.ironchest.IronChestRenderer
 import de.bluecolored.bluemap.core.world.mca.blockentity.BlockEntityType
 
@@ -63,16 +64,17 @@ object ModRenderers {
     @JvmField
     val ENDERIO_CONDUIT: BlockRendererType = type("enderio_conduit", BlockRendererFactory(::EnderIoConduitRenderer))
 
-    val ALL: List<BlockRendererType> = listOf(CHISEL_CTM, MYCTMLIB, IRON_CHEST, BIBLIOCRAFT, AE2_CABLE_BUS, ENDERIO_CONDUIT)
+    val ALL: List<BlockRendererType> = listOf(CHISEL_CTM, MYCTMLIB, IRON_CHEST, BIBLIOCRAFT, AE2_CABLE_BUS, ENDERIO_CONDUIT, AddonTesrs.TYPE)
 
     /** Raw jar textures the tile-entity renderers draw (added to the atlas when the pack has them). */
     val RAW_TEXTURES: Set<String> by lazy {
-        IronChestRenderer.RAW_TEXTURES + BiblioCraftRenderer.RAW_TEXTURES + Ae2CableBusRenderer.RAW_TEXTURES + EnderIoConduitRenderer.RAW_TEXTURES
+        IronChestRenderer.RAW_TEXTURES + BiblioCraftRenderer.RAW_TEXTURES + Ae2CableBusRenderer.RAW_TEXTURES + EnderIoConduitRenderer.RAW_TEXTURES +
+            AddonTesrs.RAW_TEXTURES
     }
 
     private val BLOCK_ENTITY_TYPES: List<BlockEntityType> by lazy {
         IronChestRenderer.BLOCK_ENTITY_TYPES + BiblioTileEntity.BLOCK_ENTITY_TYPES + Ae2CableBusTileEntity.BLOCK_ENTITY_TYPES +
-            EioConduitBundleTileEntity.BLOCK_ENTITY_TYPE
+            EioConduitBundleTileEntity.BLOCK_ENTITY_TYPE + AddonTesrs.BLOCK_ENTITY_TYPES
     }
 
     @Volatile
