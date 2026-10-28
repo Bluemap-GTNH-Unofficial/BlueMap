@@ -119,6 +119,8 @@ object MyCtm {
     /**
      * The four sub-icon indices (1..16 sheet cell + 1, 17..20 base quarters, 21..24 alt quarters) of [face] in
      * [QUADRANTS] order. Diagonals only count when both adjacent sides connect.
+     *
+     * Adapted from MyCTMLib `Textures.buildConnect` (MIT, Copyright (c) 2024 初夏同学); see NOTICE.md.
      */
     fun indices(
         face: Direction,

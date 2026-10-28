@@ -378,7 +378,10 @@ internal class VanillaFixers(
         blockEntity: BlockEntity?,
     ): BlockState = with(state, "shape", stairsShape(state, x, y, z, blocks))
 
-    /** 1.13.2 `BlockStairs.getStairsShape` (only base properties of the neighbours are involved). */
+    /**
+     * 1.13.2 `BlockStairs.getStairsShape` (only base properties of the neighbours are involved). Re-implements
+     * Minecraft behaviour (Minecraft (c) Mojang AB / Microsoft); see NOTICE.md.
+     */
     private fun stairsShape(
         state: BlockState,
         x: Int,
@@ -437,7 +440,10 @@ internal class VanillaFixers(
         return with(state, "in_wall", inWall.toString())
     }
 
-    /** 1.13.2 `BlockRedstoneWire.getSide` for the four sides. */
+    /**
+     * 1.13.2 `BlockRedstoneWire.getSide` for the four sides. Re-implements Minecraft behaviour (Minecraft (c) Mojang
+     * AB / Microsoft); see NOTICE.md.
+     */
     private fun redstoneWire(
         state: BlockState,
         x: Int,
