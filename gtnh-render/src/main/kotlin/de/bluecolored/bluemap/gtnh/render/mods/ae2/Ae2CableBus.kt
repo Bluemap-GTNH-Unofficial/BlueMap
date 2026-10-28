@@ -115,27 +115,29 @@ class Ae2CableBusTileEntity : MCABlockEntity() {
     private var facade5: Ae2FacadeStack? = null
 
     /** The block (`modid:name`, meta) of the facade on ForgeDirection [side], if any. */
-    fun facade(side: Int): Pair<String, Int>? = when (side) {
-        0 -> facade0
-        1 -> facade1
-        2 -> facade2
-        3 -> facade3
-        4 -> facade4
-        5 -> facade5
-        else -> null
-    }?.block
+    fun facade(side: Int): Pair<String, Int>? =
+        when (side) {
+            0 -> facade0
+            1 -> facade1
+            2 -> facade2
+            3 -> facade3
+            4 -> facade4
+            5 -> facade5
+            else -> null
+        }?.block
 
     /** The stack on ForgeDirection [side] (0..5), or the centre cable for 6. */
-    fun def(side: Int): Ae2ItemStack? = when (side) {
-        0 -> def0
-        1 -> def1
-        2 -> def2
-        3 -> def3
-        4 -> def4
-        5 -> def5
-        6 -> def6
-        else -> null
-    }
+    fun def(side: Int): Ae2ItemStack? =
+        when (side) {
+            0 -> def0
+            1 -> def1
+            2 -> def2
+            3 -> def3
+            4 -> def4
+            5 -> def5
+            6 -> def6
+            else -> null
+        }
 
     /** The centre cable, if it is one. */
     val cable: Ae2Cable? get() = def6?.let { Ae2Cable.of(it.damage) }
@@ -152,14 +154,18 @@ class Ae2CableBusTileEntity : MCABlockEntity() {
     }
 
     companion object {
-        val BLOCK_ENTITY_TYPES: List<BlockEntityType> = listOf("BlockCableBus", "BlockCableBusTESR").map {
-            BlockEntityType.Impl(Key.minecraft(it), Ae2CableBusTileEntity::class.java)
-        }
+        val BLOCK_ENTITY_TYPES: List<BlockEntityType> =
+            listOf("BlockCableBus", "BlockCableBusTESR").map {
+                BlockEntityType.Impl(Key.minecraft(it), Ae2CableBusTileEntity::class.java)
+            }
     }
 }
 
 /** A cable: type by `ItemMultiPart` damage base, colour = damage - base (`AEColor` ordinal, 16 = fluix). */
-data class Ae2Cable(val type: Type, val color: Int) {
+data class Ae2Cable(
+    val type: Type,
+    val color: Int,
+) {
     enum class Type(
         val base: Int,
         /** Core box (pixels, min = 16 - max). */
@@ -191,74 +197,149 @@ data class Ae2Cable(val type: Type, val color: Int) {
         }
 
         /** `AEColor` names (ordinal order) as AE2's cable textures spell them: Gray/Grey vary by prefix. */
-        val COLOR_NAMES = listOf(
-            "White", "Orange", "Magenta", "LightBlue", "Yellow", "Lime", "Pink", "Gray",
-            "LightGray", "Cyan", "Purple", "Blue", "Brown", "Green", "Red", "Black",
-        )
+        val COLOR_NAMES =
+            listOf(
+                "White",
+                "Orange",
+                "Magenta",
+                "LightBlue",
+                "Yellow",
+                "Lime",
+                "Pink",
+                "Gray",
+                "LightGray",
+                "Cyan",
+                "Purple",
+                "Blue",
+                "Brown",
+                "Green",
+                "Red",
+                "Black",
+            )
 
         /** Candidate texture names of [color] for [prefix] (first existing wins). */
-        fun textureNames(type: Type, color: Int): List<String> {
+        fun textureNames(
+            type: Type,
+            color: Int,
+        ): List<String> {
             if (color !in 0 until FLUIX) return listOf(type.fluix)
             val name = COLOR_NAMES[color]
-            val spellings = when (name) {
-                "Gray" -> listOf("Gray", "Grey")
-                "LightGray" -> listOf("LightGrey", "LightGray")
-                else -> listOf(name)
-            }
+            val spellings =
+                when (name) {
+                    "Gray" -> listOf("Gray", "Grey")
+                    "LightGray" -> listOf("LightGrey", "LightGray")
+                    else -> listOf(name)
+                }
             return spellings.map { "${type.prefix}_$it" }
         }
     }
 }
 
 /** A non-cable part on a bus side (`PartType` by `ItemMultiPart` damage). */
-data class Ae2Part(val kind: Kind, val damage: Int) {
+data class Ae2Part(
+    val kind: Kind,
+    val damage: Int,
+) {
     enum class Kind(
         /** `cableConnectionRenderTo`: the centre cable's stub ends 16 - this pixels from the part's side. */
         val stub: Float,
     ) {
-        DISPLAY(3f), IMPORT_BUS(5f), EXPORT_BUS(5f), STORAGE_BUS(4f), INTERFACE(4f), PLANE(1f), LEVEL_EMITTER(5f),
-        TOGGLE_BUS(5f), QUARTZ_FIBER(6f), CABLE_ANCHOR(6f), P2P(1f), UNKNOWN(3f),
+        DISPLAY(3f),
+        IMPORT_BUS(5f),
+        EXPORT_BUS(5f),
+        STORAGE_BUS(4f),
+        INTERFACE(4f),
+        PLANE(1f),
+        LEVEL_EMITTER(5f),
+        TOGGLE_BUS(5f),
+        QUARTZ_FIBER(6f),
+        CABLE_ANCHOR(6f),
+        P2P(1f),
+        UNKNOWN(3f),
     }
 
     companion object {
         /** Display parts: damage -> texture stem of their screen overlays (`<stem>_Bright/_Dark/_Colored`). */
-        val DISPLAY_SCREENS: Map<Int, String?> = mapOf(
-            160 to "PartMonitor", 180 to "PartMonitor", 200 to "PartMonitor",
-            340 to "PartPatternTerm", 360 to "PartCraftingTerm", 370 to "PartCraftingDiagnosticTerm", 380 to "PartTerminal",
-            400 to "PartStorageMonitor", 410 to "PartThroughputMonitor", 420 to "PartConversionMonitor",
-            480 to "PartInterfaceTerm", 500 to "PartPatternTerm", 473 to null, 690 to null,
-        )
+        val DISPLAY_SCREENS: Map<Int, String?> =
+            mapOf(
+                160 to "PartMonitor",
+                180 to "PartMonitor",
+                200 to "PartMonitor",
+                340 to "PartPatternTerm",
+                360 to "PartCraftingTerm",
+                370 to "PartCraftingDiagnosticTerm",
+                380 to "PartTerminal",
+                400 to "PartStorageMonitor",
+                410 to "PartThroughputMonitor",
+                420 to "PartConversionMonitor",
+                480 to "PartInterfaceTerm",
+                500 to "PartPatternTerm",
+                473 to null,
+                690 to null,
+            )
 
         fun of(damage: Int): Ae2Part? {
             if (Ae2Cable.of(damage) != null) return null
-            val kind = when (damage) {
-                in DISPLAY_SCREENS -> Kind.DISPLAY
-                220 -> Kind.STORAGE_BUS
-                240 -> Kind.IMPORT_BUS
-                260 -> Kind.EXPORT_BUS
-                280, 281 -> Kind.LEVEL_EMITTER
-                300, 301, 320 -> Kind.PLANE
-                80, 100 -> Kind.TOGGLE_BUS
-                120 -> Kind.CABLE_ANCHOR
-                140 -> Kind.QUARTZ_FIBER
-                440 -> Kind.INTERFACE
-                in 460..472 -> Kind.P2P
-                else -> Kind.UNKNOWN
-            }
+            val kind =
+                when (damage) {
+                    in DISPLAY_SCREENS -> Kind.DISPLAY
+                    220 -> Kind.STORAGE_BUS
+                    240 -> Kind.IMPORT_BUS
+                    260 -> Kind.EXPORT_BUS
+                    280, 281 -> Kind.LEVEL_EMITTER
+                    300, 301, 320 -> Kind.PLANE
+                    80, 100 -> Kind.TOGGLE_BUS
+                    120 -> Kind.CABLE_ANCHOR
+                    140 -> Kind.QUARTZ_FIBER
+                    440 -> Kind.INTERFACE
+                    in 460..472 -> Kind.P2P
+                    else -> Kind.UNKNOWN
+                }
             return Ae2Part(kind, damage)
         }
 
         /** `ItemMultiPart` icon (the part's face) of a part damage: `ItemPart.<PartType name>`. */
-        val ICONS: Map<Int, String> = mapOf(
-            80 to "ToggleBus", 100 to "InvertedToggleBus", 120 to "CableAnchor", 140 to "QuartzFiber",
-            160 to "Monitor", 180 to "SemiDarkMonitor", 200 to "DarkMonitor", 220 to "StorageBus", 240 to "ImportBus",
-            260 to "ExportBus", 280 to "LevelEmitter", 281 to "AdvancedLevelEmitter", 300 to "AnnihilationPlane",
-            301 to "IdentityAnnihilationPlane", 320 to "FormationPlane", 340 to "PatternTerminal", 360 to "CraftingTerminal",
-            370 to "CraftingDiagnosticTerminal", 380 to "Terminal", 400 to "StorageMonitor", 410 to "ThroughputMonitor",
-            420 to "ConversionMonitor", 440 to "Interface", 460 to "P2PTunnel", 461 to "P2PTunnel", 462 to "P2PTunnel",
-            463 to "P2PTunnel", 465 to "P2PTunnel", 466 to "P2PTunnel", 467 to "P2PTunnel", 468 to "P2PTunnel",
-            469 to "P2PTunnel", 470 to "P2PTunnel", 471 to "P2PTunnel", 472 to "P2PTunnel", 473 to "PatternRepeater",
-            480 to "InterfaceTerminal", 500 to "PatternTerminalEx", 690 to "PartCreativeEnergy",
-        ).mapValues { "ItemPart.${it.value}" }
+        val ICONS: Map<Int, String> =
+            mapOf(
+                80 to "ToggleBus",
+                100 to "InvertedToggleBus",
+                120 to "CableAnchor",
+                140 to "QuartzFiber",
+                160 to "Monitor",
+                180 to "SemiDarkMonitor",
+                200 to "DarkMonitor",
+                220 to "StorageBus",
+                240 to "ImportBus",
+                260 to "ExportBus",
+                280 to "LevelEmitter",
+                281 to "AdvancedLevelEmitter",
+                300 to "AnnihilationPlane",
+                301 to "IdentityAnnihilationPlane",
+                320 to "FormationPlane",
+                340 to "PatternTerminal",
+                360 to "CraftingTerminal",
+                370 to "CraftingDiagnosticTerminal",
+                380 to "Terminal",
+                400 to "StorageMonitor",
+                410 to "ThroughputMonitor",
+                420 to "ConversionMonitor",
+                440 to "Interface",
+                460 to "P2PTunnel",
+                461 to "P2PTunnel",
+                462 to "P2PTunnel",
+                463 to "P2PTunnel",
+                465 to "P2PTunnel",
+                466 to "P2PTunnel",
+                467 to "P2PTunnel",
+                468 to "P2PTunnel",
+                469 to "P2PTunnel",
+                470 to "P2PTunnel",
+                471 to "P2PTunnel",
+                472 to "P2PTunnel",
+                473 to "PatternRepeater",
+                480 to "InterfaceTerminal",
+                500 to "PatternTerminalEx",
+                690 to "PartCreativeEnergy",
+            ).mapValues { "ItemPart.${it.value}" }
     }
 }

@@ -36,7 +36,8 @@ import org.junit.jupiter.api.assertThrows
 import java.io.StringReader
 
 class QuadModelTest {
-    private val sample = """
+    private val sample =
+        """
         {
           "textures": { "t0": "~mod:block/top", "t1": "~mod:block/side" },
           "gtnh_quads": [
@@ -48,7 +49,7 @@ class QuadModelTest {
               "vertices": [[0,0,0, 0,0], [16,0,16, 16,0], [16,16,16, 16,16], [0,16,0, 0,16]] }
           ]
         }
-    """.trimIndent()
+        """.trimIndent()
 
     @Test
     fun `parses quads, textures and attributes`() {
@@ -86,10 +87,16 @@ class QuadModelTest {
     @Test
     fun `rejects malformed quads`() {
         assertThrows<IllegalArgumentException> {
-            QuadModel.parse(StringReader("""{"gtnh_quads": [{"texture": "#x", "vertices": [[0,0,0,0,0],[1,0,0,0,0],[1,1,0,0,0],[0,1,0,0,0]]}]}"""))
+            QuadModel.parse(
+                StringReader("""{"gtnh_quads": [{"texture": "#x", "vertices": [[0,0,0,0,0],[1,0,0,0,0],[1,1,0,0,0],[0,1,0,0,0]]}]}"""),
+            )
         }
         assertThrows<IllegalArgumentException> {
-            QuadModel.parse(StringReader("""{"textures": {"a": "m:b"}, "gtnh_quads": [{"texture": "#a", "vertices": [[0,0,0,0,0],[1,0,0,0,0],[1,1,0,0,0]]}]}"""))
+            QuadModel.parse(
+                StringReader(
+                    """{"textures": {"a": "m:b"}, "gtnh_quads": [{"texture": "#a", "vertices": [[0,0,0,0,0],[1,0,0,0,0],[1,1,0,0,0]]}]}""",
+                ),
+            )
         }
         assertThrows<IllegalArgumentException> { QuadModel.parse(StringReader("""{"textures": {}}""")) }
     }

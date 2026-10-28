@@ -59,13 +59,19 @@ class ResourcePackIntegrationTest {
     @TempDir
     lateinit var root: Path
 
-    private fun file(path: String, content: String) {
+    private fun file(
+        path: String,
+        content: String,
+    ) {
         val file = root.resolve(path)
         file.parent.createDirectories()
         file.writeText(content)
     }
 
-    private fun png(path: String, rgb: Int) {
+    private fun png(
+        path: String,
+        rgb: Int,
+    ) {
         val file = root.resolve(path)
         file.parent.createDirectories()
         val image = BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB)
@@ -73,11 +79,12 @@ class ResourcePackIntegrationTest {
         ImageIO.write(image, "png", file.toFile())
     }
 
-    private val cube = """
+    private val cube =
+        """
         {"textures": {"all": "~mod:block/side"},
          "elements": [{"from": [0,0,0], "to": [16,16,16], "faces": {
            "up": {"texture": "#all", "cullface": "up"}, "down": {"texture": "#all", "cullface": "down"}}}]}
-    """.trimIndent()
+        """.trimIndent()
 
     private fun load(): ResourcePack {
         file("assets/minecraft/atlases/blocks.json", """{"sources": [{"type": "minecraft:directory", "source": "", "prefix": ""}]}""")
@@ -86,7 +93,11 @@ class ResourcePackIntegrationTest {
         return pack
     }
 
-    private fun state(namespace: String, value: String, meta: Int) = BlockState(Key(namespace, value), mapOf("meta" to meta.toString()))
+    private fun state(
+        namespace: String,
+        value: String,
+        meta: Int,
+    ) = BlockState(Key(namespace, value), mapOf("meta" to meta.toString()))
 
     @Test
     fun `quad models, their textures and coverage classification`() {
@@ -112,7 +123,10 @@ class ResourcePackIntegrationTest {
             """.trimIndent(),
         )
         file("assets/~mod/models/block/cube.json", cube)
-        file("assets/bluemap/blockstates/missing.json", """{"variants": {"": {"renderer": "bluemap:missing", "model": "bluemap:block/missing"}}}""")
+        file(
+            "assets/bluemap/blockstates/missing.json",
+            """{"variants": {"": {"renderer": "bluemap:missing", "model": "bluemap:block/missing"}}}""",
+        )
         png("assets/~mod/textures/block/top.png", 0x00FF00)
         png("assets/~mod/textures/block/side.png", 0x0000FF)
         png("assets/~mod/textures/block/extra.png", 0xFF0000)

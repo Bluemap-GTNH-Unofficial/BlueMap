@@ -63,7 +63,11 @@ object TstTesrs {
 
         fun size(entity: TstStarTileEntity): Float = (if (entity.savedSize > 0) entity.savedSize else DEFAULT_SIZE).toFloat()
 
-        override fun mesh(assets: ModAssets, entity: TstStarTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: TstStarTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val obj = assets.obj(MODEL) ?: return null
             val texture = assets.texture(TEXTURE) ?: return null
             val size = size(entity)
@@ -85,12 +89,20 @@ object TstTesrs {
 
         override val rawTextures = setOf(TEXTURE)
 
-        override fun mesh(assets: ModAssets, entity: PlainTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: PlainTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val obj = assets.obj(MODEL) ?: return null
             val texture = assets.texture(TEXTURE) ?: return null
             // viewer due south and level: glRotated(yaw + 90 = 0, 0, 1, 0); glRotated(-pitch = 0, 1, 0, 0)
             return ObjMeshes.get(obj, texture, SIZE) {
-                obj.mesh(texture).transformed(Transform.gl(CENTER, Transform.scale(SIZE, SIZE, SIZE))).doubleSided().glowing()
+                obj
+                    .mesh(texture)
+                    .transformed(Transform.gl(CENTER, Transform.scale(SIZE, SIZE, SIZE)))
+                    .doubleSided()
+                    .glowing()
             }
         }
     }
@@ -104,15 +116,20 @@ object TstTesrs {
         override val rawTextures = setOf(TEXTURE)
 
         /** Placement by meta: glTranslated(x + dx, y, z + dz); glRotated(degrees, 0, 1, 0). */
-        fun placement(meta: Int): Transform = when (meta) {
-            0 -> Transform.translate(0.2f, 0f, 0.5f) * Transform.rotate(90f, 0f, 1f, 0f)
-            1 -> Transform.translate(0.8f, 0f, 0.5f) * Transform.rotate(-90f, 0f, 1f, 0f)
-            2 -> Transform.translate(0.5f, 0f, 0.2f)
-            3 -> Transform.translate(0.5f, 0f, 0.8f) * Transform.rotate(180f, 0f, 1f, 0f)
-            else -> Transform.IDENTITY
-        }
+        fun placement(meta: Int): Transform =
+            when (meta) {
+                0 -> Transform.translate(0.2f, 0f, 0.5f) * Transform.rotate(90f, 0f, 1f, 0f)
+                1 -> Transform.translate(0.8f, 0f, 0.5f) * Transform.rotate(-90f, 0f, 1f, 0f)
+                2 -> Transform.translate(0.5f, 0f, 0.2f)
+                3 -> Transform.translate(0.5f, 0f, 0.8f) * Transform.rotate(180f, 0f, 1f, 0f)
+                else -> Transform.IDENTITY
+            }
 
-        override fun mesh(assets: ModAssets, entity: PlainTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: PlainTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val obj = assets.obj(MODEL) ?: return null
             val texture = assets.texture(TEXTURE) ?: return null
             val meta = meta(block)
@@ -132,29 +149,38 @@ object TstTesrs {
 
         override val rawTextures = setOf(TEXTURE)
 
-        override fun mesh(assets: ModAssets, entity: PlainTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: PlainTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val texture = assets.texture(TEXTURE) ?: return null
             val own = block.blockState.id
-            val faces = Direction.entries.filter { face ->
-                val v = face.toVector()
-                val neighbor = block.getNeighborBlock(v.x, v.y, v.z)
-                neighbor.properties.isCulling && neighbor.blockState.id != own
-            }
+            val faces =
+                Direction.entries.filter { face ->
+                    val v = face.toVector()
+                    val neighbor = block.getNeighborBlock(v.x, v.y, v.z)
+                    neighbor.properties.isCulling && neighbor.blockState.id != own
+                }
             return Mesh(faces.map { plane(it, texture) })
         }
 
         /** The plane 0.001 inside [face], facing into the hole, with the TESR's corner order and uvs. */
-        fun plane(face: Direction, texture: Key): MeshQuad {
+        fun plane(
+            face: Direction,
+            texture: Key,
+        ): MeshQuad {
             val near = 0.001f
             val far = 0.999f
-            val p = when (face) {
-                Direction.UP -> floatArrayOf(0f, far, 1f, 0f, far, 0f, 1f, far, 0f, 1f, far, 1f)
-                Direction.DOWN -> floatArrayOf(0f, near, 0f, 0f, near, 1f, 1f, near, 1f, 1f, near, 0f)
-                Direction.NORTH -> floatArrayOf(0f, 1f, near, 0f, 0f, near, 1f, 0f, near, 1f, 1f, near)
-                Direction.SOUTH -> floatArrayOf(0f, 0f, far, 0f, 1f, far, 1f, 1f, far, 1f, 0f, far)
-                Direction.WEST -> floatArrayOf(near, 1f, 0f, near, 1f, 1f, near, 0f, 1f, near, 0f, 0f)
-                Direction.EAST -> floatArrayOf(far, 0f, 0f, far, 0f, 1f, far, 1f, 1f, far, 1f, 0f)
-            }
+            val p =
+                when (face) {
+                    Direction.UP -> floatArrayOf(0f, far, 1f, 0f, far, 0f, 1f, far, 0f, 1f, far, 1f)
+                    Direction.DOWN -> floatArrayOf(0f, near, 0f, 0f, near, 1f, 1f, near, 1f, 1f, near, 0f)
+                    Direction.NORTH -> floatArrayOf(0f, 1f, near, 0f, 0f, near, 1f, 0f, near, 1f, 1f, near)
+                    Direction.SOUTH -> floatArrayOf(0f, 0f, far, 0f, 1f, far, 1f, 1f, far, 1f, 0f, far)
+                    Direction.WEST -> floatArrayOf(near, 1f, 0f, near, 1f, 1f, near, 0f, 1f, near, 0f, 0f)
+                    Direction.EAST -> floatArrayOf(far, 0f, 0f, far, 0f, 1f, far, 1f, 1f, far, 1f, 0f)
+                }
             return MeshQuad(p, floatArrayOf(1f, 1f, 1f, 0f, 0f, 0f, 0f, 1f), texture, GREY, glow = true)
         }
     }
@@ -170,10 +196,18 @@ internal fun meta(block: BlockNeighborhood): Int = block.blockState.properties["
 
 /** Transformed Wavefront meshes, per model instance, texture and the parameters that place them. */
 internal object ObjMeshes {
-    private data class CacheKey(val obj: ObjModel, val texture: Key, val params: Any)
+    private data class CacheKey(
+        val obj: ObjModel,
+        val texture: Key,
+        val params: Any,
+    )
 
     private val cache = ConcurrentHashMap<CacheKey, Mesh>()
 
-    fun get(obj: ObjModel, texture: Key, params: Any, build: () -> Mesh): Mesh =
-        cache.computeIfAbsent(CacheKey(obj, texture, params)) { build() }
+    fun get(
+        obj: ObjModel,
+        texture: Key,
+        params: Any,
+        build: () -> Mesh,
+    ): Mesh = cache.computeIfAbsent(CacheKey(obj, texture, params)) { build() }
 }

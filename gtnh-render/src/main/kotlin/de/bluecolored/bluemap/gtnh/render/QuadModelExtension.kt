@@ -40,7 +40,9 @@ import kotlin.io.path.name
  * Loads the [QuadModel]s of all resource packs (every `.json` below `assets/<ns>/models/gtnh_quads/`) and makes their textures
  * part of the atlas. Higher-priority roots come first and win, like BlueMap's own resource pools.
  */
-class QuadModelExtension(private val pack: ResourcePack) : ResourcePackExtension {
+class QuadModelExtension(
+    private val pack: ResourcePack,
+) : ResourcePackExtension {
     private val models = ConcurrentHashMap<Key, QuadModel>()
 
     operator fun get(key: Key): QuadModel? = models[key]

@@ -58,22 +58,38 @@ abstract class AddonTesr<T : MCABlockEntity>(
     open val drawsBlockModel: Boolean get() = false
 
     /** The TESR's geometry in block space, or null when the pack lacks its assets (the variant model is drawn). */
-    abstract fun mesh(assets: ModAssets, entity: T, block: BlockNeighborhood): Mesh?
+    abstract fun mesh(
+        assets: ModAssets,
+        entity: T,
+        block: BlockNeighborhood,
+    ): Mesh?
 
     val blockEntityTypes: List<BlockEntityType> get() = ids.map { BlockEntityType.Impl(Key.minecraft(it), entityClass) }
 
     @Suppress("UNCHECKED_CAST")
-    internal fun meshOf(assets: ModAssets, entity: MCABlockEntity, block: BlockNeighborhood): Mesh? =
-        if (entityClass.isInstance(entity)) mesh(assets, entity as T, block) else null
+    internal fun meshOf(
+        assets: ModAssets,
+        entity: MCABlockEntity,
+        block: BlockNeighborhood,
+    ): Mesh? = if (entityClass.isInstance(entity)) mesh(assets, entity as T, block) else null
 }
 
 /**
  * `gtnh:addon_tesr`: blocks of community addons (Twist Space Technology, GT: Not Leisure, Box++, 123Technology)
  * whose look comes from a TESR. The exporter selects it by tile entity class; the tile entity id picks the port.
  */
-class AddonTesrRenderer(resourcePack: ResourcePack, textureGallery: TextureGallery, renderSettings: RenderSettings) :
-    ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
-    override fun render(assets: ModAssets, block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color): Boolean {
+class AddonTesrRenderer(
+    resourcePack: ResourcePack,
+    textureGallery: TextureGallery,
+    renderSettings: RenderSettings,
+) : ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
+    override fun render(
+        assets: ModAssets,
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ): Boolean {
         val entity = block.blockEntity as? MCABlockEntity ?: return false
         val tesr = AddonTesrs.byId[entity.id] ?: return false
         val mesh = tesr.meshOf(assets, entity, block) ?: return false
@@ -121,7 +137,11 @@ private fun MeshQuad.flipped(): MeshQuad {
 }
 
 /** `0xRRGGBB` of GL colour components 0..1. */
-internal fun rgb(r: Float, g: Float, b: Float): Int {
+internal fun rgb(
+    r: Float,
+    g: Float,
+    b: Float,
+): Int {
     fun c(v: Float) = (v.coerceIn(0f, 1f) * 255f + 0.5f).toInt()
     return (c(r) shl 16) or (c(g) shl 8) or c(b)
 }

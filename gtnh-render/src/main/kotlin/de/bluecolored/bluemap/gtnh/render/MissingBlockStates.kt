@@ -36,7 +36,9 @@ import de.bluecolored.bluemap.core.util.Key
  *
  * Blocks that have a blockstate file but no variant for a meta keep BlueMap's behaviour (first variant).
  */
-class MissingBlockStates(private val pack: ResourcePack) : ResourcePackExtension {
+class MissingBlockStates(
+    private val pack: ResourcePack,
+) : ResourcePackExtension {
     override fun getBlockStateKey(key: Key): Key {
         if (key.namespace == Key.MINECRAFT_NAMESPACE || key.namespace == Key.BLUEMAP_NAMESPACE) return key
         return if (pack.blockStates[key] == null) ResourcePack.MISSING_BLOCK_STATE else key
@@ -44,12 +46,13 @@ class MissingBlockStates(private val pack: ResourcePack) : ResourcePackExtension
 
     companion object {
         @JvmField
-        val TYPE: ResourcePack.Extension<MissingBlockStates> = object : ResourcePack.Extension<MissingBlockStates> {
-            private val key = Key("gtnh", "missing_block_states")
+        val TYPE: ResourcePack.Extension<MissingBlockStates> =
+            object : ResourcePack.Extension<MissingBlockStates> {
+                private val key = Key("gtnh", "missing_block_states")
 
-            override fun getKey(): Key = key
+                override fun getKey(): Key = key
 
-            override fun create(pack: ResourcePack): MissingBlockStates = MissingBlockStates(pack)
-        }
+                override fun create(pack: ResourcePack): MissingBlockStates = MissingBlockStates(pack)
+            }
     }
 }

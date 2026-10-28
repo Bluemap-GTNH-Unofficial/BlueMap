@@ -32,22 +32,26 @@ import kotlin.io.path.createDirectories
 import kotlin.io.path.writeText
 
 /**
- * A small synthetic GregTech dump in the exporter's schema (`tools/gtnh-exporter/README.md` "GregTech dump"):
+ * A small synthetic GregTech dump in the exporter's schema (gtnh-exporter repository's README, "GregTech dump"):
  * one generator-like machine, a basic machine, a hatch, a multiblock controller, a bare and an insulated cable,
  * a fluid pipe, ore blocks and materials. Textures are `t:block/<name>`.
  */
 object GtFixtures {
     fun tex(name: String) = Key("t", "block/$name")
 
-    private fun icon(name: String, rgba: String = "[255,255,255,0]", extra: String = "") =
-        """{"type":"icon","icon":"t:$name","key":"t:block/$name","rgba":$rgba,"glow":false$extra}"""
+    private fun icon(
+        name: String,
+        rgba: String = "[255,255,255,0]",
+        extra: String = "",
+    ) = """{"type":"icon","icon":"t:$name","key":"t:block/$name","rgba":$rgba,"glow":false$extra}"""
 
     // mte.json layer table
     private val mteLayers =
         listOf(
             icon("casing_side"), // 0
             icon("casing_top"), // 1
-            """{"type":"icon","icon":"t:front","key":"t:block/front","overlay":"t:front_overlay","overlayKey":"t:block/front_overlay","rgba":[255,255,255,0],"glow":false}""", // 2
+            """{"type":"icon","icon":"t:front","key":"t:block/front",""" +
+                """"overlay":"t:front_overlay","overlayKey":"t:block/front_overlay","rgba":[255,255,255,0],"glow":false}""", // 2
             """{"type":"icon","icon":"t:front_active","key":"t:block/front_active","rgba":[255,255,255,0],"glow":true}""", // 3
             """{"type":"background"}""", // 4
             icon("hatch_overlay"), // 5
@@ -57,9 +61,11 @@ object GtFixtures {
             icon("pipe_end", "[100,50,0,0]"), // 9
             icon("pipe_side", "[100,50,0,0]"), // 10
             icon("ctrl_front", extra = ""","extFacing":true"""), // 11
-            """{"type":"block","block":"gregtech:gt.blockcasings","meta":2,"copiedSide":6,"icon":"t:copied","key":"t:block/copied"}""", // 12
+            """{"type":"block","block":"gregtech:gt.blockcasings","meta":2,"copiedSide":6,""" +
+                """"icon":"t:copied","key":"t:block/copied"}""", // 12
             icon("glass", extra = ""","pass":1"""), // 13
-            """{"type":"icon","invisible":true,"icon":"t:hidden","key":"t:block/hidden","overlay":"t:shown","overlayKey":"t:block/shown","rgba":[255,255,255,0],"glow":false}""", // 14
+            """{"type":"icon","invisible":true,"icon":"t:hidden","key":"t:block/hidden",""" +
+                """"overlay":"t:shown","overlayKey":"t:block/shown","rgba":[255,255,255,0],"glow":false}""", // 14
         )
 
     // mte.json face table
@@ -85,10 +91,23 @@ object GtFixtures {
         )
 
     /** `textures[facing][active][side]`: [front] (inactive / active) on the facing side, top on up, [side] elsewhere. */
-    private fun textures(frontInactive: Int, frontActive: Int, side: Int = 0, top: Int = 1): String =
+    private fun textures(
+        frontInactive: Int,
+        frontActive: Int,
+        side: Int = 0,
+        top: Int = 1,
+    ): String =
         (0 until 6).joinToString(",", "[", "]") { facing ->
             listOf(frontInactive, frontActive).joinToString(",", "[", "]") { front ->
-                (0 until 6).joinToString(",", "[", "]") { s -> if (s == facing) "$front" else if (s == 1) "$top" else "$side" }
+                (0 until 6).joinToString(",", "[", "]") { s ->
+                    if (s == facing) {
+                        "$front"
+                    } else if (s == 1) {
+                        "$top"
+                    } else {
+                        "$side"
+                    }
+                }
             }
         }
 
@@ -99,7 +118,10 @@ object GtFixtures {
                 "outputFace":[{"down":7,"up":6,"side":5},{"down":7,"up":6,"side":5}]}""",
             """{"id":30,"name":"hatch.test","kind":"hatch","baseType":0,"tier":1,"textures":${textures(16, 16)},
                 "hatch":{"front":[4,4],"defaultBackground":[0,1,0,0,0,0]}}""",
-            """{"id":40,"name":"multimachine.test","kind":"multiblock_controller","baseType":2,"alignment":true,"textures":${textures(13, 13)}}""",
+            """{"id":40,"name":"multimachine.test","kind":"multiblock_controller","baseType":2,"alignment":true,"textures":${textures(
+                13,
+                13,
+            )}}""",
             """{"id":50,"name":"glass.test","kind":"machine","baseType":0,"textures":${textures(14, 14, side = 14, top = 14)}}""",
             """{"id":60,"name":"hidden.test","kind":"machine","baseType":0,"textures":${textures(15, 15, side = 15, top = 15)}}""",
             """{"id":1200,"name":"wire.test","kind":"cable","baseType":8,
@@ -130,10 +152,11 @@ object GtFixtures {
             layers.add(icon("casing_side"))
             layers.add(icon("casing_cleanstainless"))
             for (c in 0 until 16) layers.add(icon("casing_side", rgba(dyeRgb(c))))
-            val tier = (0..16).joinToString(",", "[", "]") { colour ->
-                val layer = if (colour == 0) 0 else 2 + colour - 1
-                (0 until 6).joinToString(",", "[", "]") { "[$layer]" }
-            }
+            val tier =
+                (0..16).joinToString(",", "[", "]") { colour ->
+                    val layer = if (colour == 0) 0 else 2 + colour - 1
+                    (0 until 6).joinToString(",", "[", "]") { "[$layer]" }
+                }
             """{"errorTextureId":225,"layers":${layers.joinToString(",", "[", "]")},
                 "casings":{"49":[[1],[1],[1],[1],[1],[1]]},
                 "machineCasings":[$tier,$tier],"errors":[]}"""
@@ -149,7 +172,11 @@ object GtFixtures {
               "DULL":{"name":"DULL","blockIcons":{"FRAME_GT":{"icon":"t:frame_dull","key":"t:block/frame_dull"}}},
               "METALLIC":{"name":"METALLIC","blockIcons":{"FRAME_GT":{"icon":"t:frame_metallic","key":"t:block/frame_metallic"}}},
               "SHINY":{"name":"SHINY","blockIcons":{}}},
-            "dyes":${(0 until 16).joinToString(",", "[", "]") { """{"index":$it,"name":"dye$it","colorName":"C$it","rgba":${rgba(dyeRgb(it))}}""" }},
+            "dyes":${(0 until 16).joinToString(
+            ",",
+            "[",
+            "]",
+        ) { """{"index":$it,"name":"dye$it","colorName":"C$it","rgba":${rgba(dyeRgb(it))}}""" }},
             "machineMetal":[255,255,255,0]}"""
 
     val ores: String =

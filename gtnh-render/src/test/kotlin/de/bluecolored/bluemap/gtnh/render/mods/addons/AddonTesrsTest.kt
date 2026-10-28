@@ -51,7 +51,10 @@ class AddonTesrsTest {
         fun register() = GtnhRender.register()
 
         /** Serializes a tile entity compound and reads it back like a 1.7 chunk's `TileEntities` entry. */
-        fun te(id: String, fields: NBTWriter.() -> Unit = {}): BlockEntity? {
+        fun te(
+            id: String,
+            fields: NBTWriter.() -> Unit = {},
+        ): BlockEntity? {
             val out = ByteArrayOutputStream()
             NBTWriter(out).use { w ->
                 w.beginCompound()
@@ -83,35 +86,50 @@ class AddonTesrsTest {
         return kit
     }
 
-    private fun ModTestKit.texture(raw: String, path: String, rgb: Int = 0xFFFFFF): Pair<String, String> {
+    private fun ModTestKit.texture(
+        raw: String,
+        path: String,
+        rgb: Int = 0xFFFFFF,
+    ): Pair<String, String> {
         png(path, rgb)
         return raw to path
     }
 
-    private fun ModTestKit.obj(raw: String, path: String, content: String = QUAD_OBJ): Pair<String, String> {
+    private fun ModTestKit.obj(
+        raw: String,
+        path: String,
+        content: String = QUAD_OBJ,
+    ): Pair<String, String> {
         file(path, content)
         return raw to path
     }
 
-    private fun maxOf(tris: List<ModTestKit.Triangle>, axis: Int) = tris.maxOf { t -> (0 until 3).maxOf { t.positions[it * 3 + axis] } }
+    private fun maxOf(
+        tris: List<ModTestKit.Triangle>,
+        axis: Int,
+    ) = tris.maxOf { t -> (0 until 3).maxOf { t.positions[it * 3 + axis] } }
 
-    private fun minOf(tris: List<ModTestKit.Triangle>, axis: Int) = tris.minOf { t -> (0 until 3).minOf { t.positions[it * 3 + axis] } }
+    private fun minOf(
+        tris: List<ModTestKit.Triangle>,
+        axis: Int,
+    ) = tris.minOf { t -> (0 until 3).minOf { t.positions[it * 3 + axis] } }
 
     @Test
     fun `every port's tile entity id reads into its own tile entity class`() {
-        val expected = mapOf(
-            "StarRender" to TstStarTileEntity::class.java,
-            "EyeOfWoodRender" to PlainTileEntity::class.java,
-            "TilePowerChair" to PlainTileEntity::class.java,
-            "TileArcaneHole" to PlainTileEntity::class.java,
-            "MeteorMinerRenderer" to GtLaserTileEntity::class.java,
-            "laser_beacon_tile_entity" to GtLaserTileEntity::class.java,
-            "BoxRing" to BoxRingTileEntity::class.java,
-            "RocketRender" to OthRocketTileEntity::class.java,
-            "modelAsuka" to PlainTileEntity::class.java,
-            "modelAyanami" to PlainTileEntity::class.java,
-            "modelTallHat" to PlainTileEntity::class.java,
-        )
+        val expected =
+            mapOf(
+                "StarRender" to TstStarTileEntity::class.java,
+                "EyeOfWoodRender" to PlainTileEntity::class.java,
+                "TilePowerChair" to PlainTileEntity::class.java,
+                "TileArcaneHole" to PlainTileEntity::class.java,
+                "MeteorMinerRenderer" to GtLaserTileEntity::class.java,
+                "laser_beacon_tile_entity" to GtLaserTileEntity::class.java,
+                "BoxRing" to BoxRingTileEntity::class.java,
+                "RocketRender" to OthRocketTileEntity::class.java,
+                "modelAsuka" to PlainTileEntity::class.java,
+                "modelAyanami" to PlainTileEntity::class.java,
+                "modelTallHat" to PlainTileEntity::class.java,
+            )
         for ((id, type) in expected) {
             assertEquals(type, te(id)?.javaClass, id)
             assertTrue(AddonTesrs.byId.containsKey(Key.minecraft(id)), id)
@@ -145,11 +163,18 @@ class AddonTesrsTest {
 
     @Test
     fun `laser beacon reads GT's laser fields, draws only its block while idle and a coloured column while mining`() {
-        val laser = te("laser_beacon_tile_entity") {
-            name("rgb_red").value(1f); name("rgb_green").value(0f); name("rgb_blue").value(0.5f)
-            name("shouldRender").value(1.toByte()); name("range").value(10.0)
-            name("rotAxisX").value(1.0); name("rotAxisY").value(0.0); name("rotAxisZ").value(0.0); name("rotationAngle").value(90.0)
-        } as GtLaserTileEntity
+        val laser =
+            te("laser_beacon_tile_entity") {
+                name("rgb_red").value(1f)
+                name("rgb_green").value(0f)
+                name("rgb_blue").value(0.5f)
+                name("shouldRender").value(1.toByte())
+                name("range").value(10.0)
+                name("rotAxisX").value(1.0)
+                name("rotAxisY").value(0.0)
+                name("rotAxisZ").value(0.0)
+                name("rotationAngle").value(90.0)
+            } as GtLaserTileEntity
         assertTrue(laser.shouldRender)
         assertEquals(10.0, laser.range)
         assertEquals(90.0, laser.rotationAngle)
@@ -163,9 +188,18 @@ class AddonTesrsTest {
         assertEquals(12, idle.size)
         assertTrue(idle.all { it.texture == stone })
 
-        val upright = kit.render(Cell(state("test:block", 0), te("MeteorMinerRenderer") {
-            name("rgb_red").value(1f); name("shouldRender").value(1.toByte()); name("range").value(10.0)
-        })).triangles
+        val upright =
+            kit
+                .render(
+                    Cell(
+                        state("test:block", 0),
+                        te("MeteorMinerRenderer") {
+                            name("rgb_red").value(1f)
+                            name("shouldRender").value(1.toByte())
+                            name("range").value(10.0)
+                        },
+                    ),
+                ).triangles
         val beam = upright.filter { it.texture == white }
         assertEquals(12, upright.size - beam.size)
         // 5 faces (no bottom), both sides
@@ -185,13 +219,16 @@ class AddonTesrsTest {
 
     @Test
     fun `power chair placement follows block meta`() {
-        fun origin(meta: Int): FloatArray = FloatArray(3).also { TstTesrs.PowerChair.placement(meta).apply(floatArrayOf(0f, 0f, 0f), 0, it, 0) }
-        fun forward(meta: Int): FloatArray = FloatArray(3).also {
-            val t = TstTesrs.PowerChair.placement(meta)
-            val o = origin(meta)
-            t.apply(floatArrayOf(0f, 0f, 1f), 0, it, 0)
-            for (i in 0 until 3) it[i] -= o[i]
-        }
+        fun origin(meta: Int): FloatArray =
+            FloatArray(3).also { TstTesrs.PowerChair.placement(meta).apply(floatArrayOf(0f, 0f, 0f), 0, it, 0) }
+
+        fun forward(meta: Int): FloatArray =
+            FloatArray(3).also {
+                val t = TstTesrs.PowerChair.placement(meta)
+                val o = origin(meta)
+                t.apply(floatArrayOf(0f, 0f, 1f), 0, it, 0)
+                for (i in 0 until 3) it[i] -= o[i]
+            }
         assertEquals(listOf(0.2f, 0f, 0.5f), origin(0).toList())
         assertEquals(listOf(0.8f, 0f, 0.5f), origin(1).toList())
         assertEquals(listOf(0.5f, 0f, 0.2f), origin(2).toList())
@@ -208,11 +245,12 @@ class AddonTesrsTest {
         val kit = kit(ModTestKit(root).texture(TstTesrs.ArcaneHole.TEXTURE, "assets/thaumcraft/textures/misc/particlefield32.png"))
         kit.file("assets/test/blockstates/stone.json", """{"variants": {"meta=0": {"model": "test:block/cube"}}}""")
         val stone = Cell(state("test:stone", 0))
-        val hole = kit.render(
-            Cell(state("test:block", 0), te("TileArcaneHole")),
-            Triple(0, -1, 0) to stone,
-            Triple(1, 0, 0) to stone,
-        )
+        val hole =
+            kit.render(
+                Cell(state("test:block", 0), te("TileArcaneHole")),
+                Triple(0, -1, 0) to stone,
+                Triple(1, 0, 0) to stone,
+            )
         // the hole's own block model is not drawn (its icon is blank); only the TESR planes
         assertTrue(hole.triangles.all { it.texture == kit.id(Key("thaumcraft", "misc/particlefield32")) })
         val facings = hole.triangles.map { it.facing }.toSet()
@@ -228,22 +266,41 @@ class AddonTesrsTest {
 
     @Test
     fun `box ring draws the core ring always and 1 to 3 big rings on a formed encapsulator`() {
-        assertEquals(listOf(BoxTesrs.Ring.CORE_SCALE), (te("BoxRing") { name("renderStatus").value(0.toByte()) } as BoxRingTileEntity).ringScales())
-        val formed = te("BoxRing") {
-            name("renderStatus").value(1.toByte()); name("switch").value(1.toByte()); name("scale").value(2f); name("count").value(3)
-        } as BoxRingTileEntity
+        assertEquals(
+            listOf(BoxTesrs.Ring.CORE_SCALE),
+            (te("BoxRing") { name("renderStatus").value(0.toByte()) } as BoxRingTileEntity).ringScales(),
+        )
+        val formed =
+            te("BoxRing") {
+                name("renderStatus").value(1.toByte())
+                name("switch").value(1.toByte())
+                name("scale").value(2f)
+                name("count").value(3)
+            } as BoxRingTileEntity
         val scales = formed.ringScales()
         assertEquals(4, scales.size)
         listOf(2.2f, 2.8f, 3.6f, BoxTesrs.Ring.CORE_SCALE).zip(scales).forEach { (e, a) -> assertEquals(e, a, 1e-5f) }
-        val switchedOff = te("BoxRing") { name("renderStatus").value(1.toByte()); name("switch").value(0.toByte()); name("count").value(2) } as BoxRingTileEntity
+        val switchedOff =
+            te("BoxRing") {
+                name("renderStatus").value(1.toByte())
+                name("switch").value(0.toByte())
+                name("count").value(2)
+            } as BoxRingTileEntity
         assertEquals(1, switchedOff.ringScales().size)
-        val two = te("BoxRing") { name("renderStatus").value(1.toByte()); name("switch").value(1.toByte()); name("scale").value(1f); name("count").value(2) } as BoxRingTileEntity
+        val two =
+            te("BoxRing") {
+                name("renderStatus").value(1.toByte())
+                name("switch").value(1.toByte())
+                name("scale").value(1f)
+                name("count").value(2)
+            } as BoxRingTileEntity
         assertEquals(3, two.ringScales().size)
 
-        val kit = kit(
-            ModTestKit(root).obj(BoxTesrs.Ring.MODEL, "assets/boxplusplus/models/~ring.obj"),
-            ModTestKit(root).texture(BoxTesrs.Ring.TEXTURE, "assets/boxplusplus/textures/models/ring.png"),
-        )
+        val kit =
+            kit(
+                ModTestKit(root).obj(BoxTesrs.Ring.MODEL, "assets/boxplusplus/models/~ring.obj"),
+                ModTestKit(root).texture(BoxTesrs.Ring.TEXTURE, "assets/boxplusplus/textures/models/ring.png"),
+            )
         val tris = kit.render(Cell(state("test:block", 0), two)).triangles
         // 3 rings × 1 quad × 2 sides × 2 triangles, full bright; the biggest (1.4) reaches 0.5 + 1.4
         assertEquals(12, tris.size)
@@ -258,10 +315,11 @@ class AddonTesrsTest {
         assertEquals(listOf(0f, 0f, 180f, 0f, 90f, -90f), (0..5).map(OthTesrs.Rocket::turn))
         assertEquals(listOf(0f, 0f, 0f, 180f, 90f, -90f), (0..5).map(OthTesrs.Figure::turn))
 
-        val kit = kit(
-            ModTestKit(root).obj(OthTesrs.ASUKA.model, "assets/123technology/models/~asuka.obj"),
-            ModTestKit(root).texture(OthTesrs.ASUKA.texture, "assets/123technology/textures/models/asuka~texture.png"),
-        )
+        val kit =
+            kit(
+                ModTestKit(root).obj(OthTesrs.ASUKA.model, "assets/123technology/models/~asuka.obj"),
+                ModTestKit(root).texture(OthTesrs.ASUKA.texture, "assets/123technology/textures/models/asuka~texture.png"),
+            )
         // meta 3: turned 180°, standing 0.1 above the floor (model y = 1 -> 1.1), normally lit
         val tris = kit.render(Cell(state("test:block", 3), te("modelAsuka"))).triangles
         assertEquals(2, tris.size)

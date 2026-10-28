@@ -60,7 +60,12 @@ abstract class ModBlockRenderer(
     private val tintColor = Color()
     private var mapColorOpacity = 0f
 
-    final override fun render(block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color) {
+    final override fun render(
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ) {
         val modelStart = blockModel.start
         mapColorOpacity = 0f
         delegated = false
@@ -85,7 +90,13 @@ abstract class ModBlockRenderer(
     private var delegated = false
 
     /** Draws the block; false to fall back to the variant's model. */
-    protected abstract fun render(assets: ModAssets, block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color): Boolean
+    protected abstract fun render(
+        assets: ModAssets,
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ): Boolean
 
     private val delegates = HashMap<BlockRendererType, de.bluecolored.bluemap.core.map.hires.block.BlockRenderer>()
 
@@ -93,7 +104,12 @@ abstract class ModBlockRenderer(
      * Draws [state]'s own blockstate variants at this block's position (a facade showing another block), with this
      * block's light and neighbours. False if the pack has nothing for the state.
      */
-    protected fun renderState(state: de.bluecolored.bluemap.core.world.BlockState, block: BlockNeighborhood, blockModel: TileModelView, color: Color): Boolean {
+    protected fun renderState(
+        state: de.bluecolored.bluemap.core.world.BlockState,
+        block: BlockNeighborhood,
+        blockModel: TileModelView,
+        color: Color,
+    ): Boolean {
         val resource = resourcePack.getBlockState(state) ?: return false
         var drawn = false
         resource.forEach(state, block.x, block.y, block.z) { v ->
@@ -111,14 +127,24 @@ abstract class ModBlockRenderer(
      * Draws the variant's own model (the exporter's static capture) besides the renderer's quads, for blocks that
      * render as a normal block and have a TESR on top. Call it after the [emit]s: it finishes the map colour.
      */
-    protected fun renderOwnModel(block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color) {
+    protected fun renderOwnModel(
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ) {
         // a model transform must only move the model's own faces
         blockModel.initialize()
         renderVariantModel(block, variant, blockModel, color)
         delegated = true
     }
 
-    private fun renderVariantModel(block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color) {
+    private fun renderVariantModel(
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ) {
         if (quadModels?.get(variant.model) != null) {
             quadRenderer.render(block, variant, blockModel, color)
         } else {
@@ -126,12 +152,22 @@ abstract class ModBlockRenderer(
         }
     }
 
-    protected fun emit(mesh: Mesh, block: BlockNeighborhood, blockModel: TileModelView, color: Color) {
+    protected fun emit(
+        mesh: Mesh,
+        block: BlockNeighborhood,
+        blockModel: TileModelView,
+        color: Color,
+    ) {
         for (quad in mesh.quads) emit(quad, block, blockModel, color)
     }
 
     /** Draws one quad unless it is culled (by its [MeshQuad.cullface] neighbour, top-only or cave removal). */
-    protected fun emit(quad: MeshQuad, block: BlockNeighborhood, blockModel: TileModelView, color: Color) {
+    protected fun emit(
+        quad: MeshQuad,
+        block: BlockNeighborhood,
+        blockModel: TileModelView,
+        color: Color,
+    ) {
         if (renderSettings.isRenderTopOnly && quad.normalY < 0.01f) return
         val cullface = quad.cullface
         if (cullface != null) {

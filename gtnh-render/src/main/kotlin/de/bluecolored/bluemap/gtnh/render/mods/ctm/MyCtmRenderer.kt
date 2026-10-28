@@ -49,66 +49,103 @@ import kotlin.math.abs
  * connects when it is the same block state or shows a matching texture on the same side. Without MyCTMLib data,
  * or for transformed variants, the variant's model is drawn unchanged.
  */
-class MyCtmRenderer(private val resourcePack: ResourcePack, textureGallery: TextureGallery, renderSettings: RenderSettings) :
-    ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
+class MyCtmRenderer(
+    private val resourcePack: ResourcePack,
+    textureGallery: TextureGallery,
+    renderSettings: RenderSettings,
+) : ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
     private val modelFaces = ModelFaces(resourcePack)
     private val indices = IntArray(4)
 
     /** A block face drawn with connected quadrants. */
-    private class CtmFace(val face: Direction, val texture: MyCtmTexture, val rgb: Int, val tint: Boolean) {
+    private class CtmFace(
+        val face: Direction,
+        val texture: MyCtmTexture,
+        val rgb: Int,
+        val tint: Boolean,
+    ) {
         /** Quadrant quads by `quadrant * 25 + index`. */
         val quads = arrayOfNulls<MeshQuad>(4 * 25)
     }
 
-    private class Prepared(val plain: List<MeshQuad>, val faces: List<CtmFace>)
+    private class Prepared(
+        val plain: List<MeshQuad>,
+        val faces: List<CtmFace>,
+    )
 
-    override fun render(assets: ModAssets, block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color): Boolean {
+    override fun render(
+        assets: ModAssets,
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ): Boolean {
         val data = assets.myCtm ?: return false
         if (variant.isTransformed) return false
         val prepared = prepared(data, variant.model) ?: return false
         for (quad in prepared.plain) emit(quad, block, blockModel, color)
         val state = block.blockState
         for (face in prepared.faces) {
-            val neighbours = MyCtm.FaceNeighbours { dx, dy, dz ->
-                val neighbor = block.getNeighborBlock(dx, dy, dz).blockState
-                neighbor == state || data.matches(face.texture, modelFaces.face(neighbor, face.face)?.texture)
-            }
+            val neighbours =
+                MyCtm.FaceNeighbours { dx, dy, dz ->
+                    val neighbor = block.getNeighborBlock(dx, dy, dz).blockState
+                    neighbor == state || data.matches(face.texture, modelFaces.face(neighbor, face.face)?.texture)
+                }
             MyCtm.indices(face.face, neighbours, face.texture.alt != null, indices)
             for (q in 0 until 4) emit(quadrant(face, q, indices[q]), block, blockModel, color)
         }
         return true
     }
 
-    private fun quadrant(face: CtmFace, q: Int, index: Int): MeshQuad {
+    private fun quadrant(
+        face: CtmFace,
+        q: Int,
+        index: Int,
+    ): MeshQuad {
         val slot = q * 25 + index
         face.quads[slot]?.let { return it }
         val tex = face.texture
-        val (texture, cells, cell) = when {
-            index <= 16 -> Triple(tex.connection, 4, index - 1)
-            index <= 20 -> Triple(tex.base, 2, index - 17)
-            else -> Triple(tex.alt ?: tex.base, 2, index - 21)
-        }
+        val (texture, cells, cell) =
+            when {
+                index <= 16 -> Triple(tex.connection, 4, index - 1)
+                index <= 20 -> Triple(tex.base, 2, index - 17)
+                else -> Triple(tex.alt ?: tex.base, 2, index - 21)
+            }
         val col = cell % cells
         val row = cell / cells
         val s = 1f / cells
         val region = MyCtm.QUADRANTS[q]
-        val quad = Faces.region(
-            face.face, ZERO, ONE, region[0], region[1], region[2], region[3],
-            FaceTexture(texture, col * s, row * s, (col + 1) * s, (row + 1) * s, rgb = face.rgb),
-            legacyBottom = true,
-        ).let { if (face.tint) MeshQuad(it.positions, it.uvs, it.texture, it.rgb, tint = true) else it }
+        val quad =
+            Faces
+                .region(
+                    face.face,
+                    ZERO,
+                    ONE,
+                    region[0],
+                    region[1],
+                    region[2],
+                    region[3],
+                    FaceTexture(texture, col * s, row * s, (col + 1) * s, (row + 1) * s, rgb = face.rgb),
+                    legacyBottom = true,
+                ).let { if (face.tint) MeshQuad(it.positions, it.uvs, it.texture, it.rgb, tint = true) else it }
         face.quads[slot] = quad
         return quad
     }
 
     private val preparedCache = ConcurrentHashMap<Key, Any>()
 
-    private fun prepared(data: MyCtmData, model: Key): Prepared? {
+    private fun prepared(
+        data: MyCtmData,
+        model: Key,
+    ): Prepared? {
         val cached = preparedCache.computeIfAbsent(model) { prepare(data, it) ?: NONE }
         return cached as? Prepared
     }
 
-    private fun prepare(data: MyCtmData, modelKey: Key): Prepared? {
+    private fun prepare(
+        data: MyCtmData,
+        modelKey: Key,
+    ): Prepared? {
         val quads = modelFaces.quads(modelKey) ?: return null
         val plain = ArrayList<MeshQuad>()
         val groups = LinkedHashMap<Pair<Direction, Key>, MutableList<MeshQuad>>()
@@ -140,6 +177,5 @@ class MyCtmRenderer(private val resourcePack: ResourcePack, textureGallery: Text
         val ZERO = floatArrayOf(0f, 0f, 0f)
         val ONE = floatArrayOf(1f, 1f, 1f)
         val NONE = Any()
-
     }
 }

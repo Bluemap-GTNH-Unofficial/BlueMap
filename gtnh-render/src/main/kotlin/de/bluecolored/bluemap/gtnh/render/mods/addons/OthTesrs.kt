@@ -52,21 +52,30 @@ object OthTesrs {
 
         fun size(entity: OthRocketTileEntity): Float = (if (entity.savedSize > 0) entity.savedSize else 1.0).toFloat()
 
-        fun turn(meta: Int): Float = when (meta) {
-            2 -> 180f
-            4 -> 90f
-            5 -> -90f
-            else -> 0f
-        }
+        fun turn(meta: Int): Float =
+            when (meta) {
+                2 -> 180f
+                4 -> 90f
+                5 -> -90f
+                else -> 0f
+            }
 
-        override fun mesh(assets: ModAssets, entity: OthRocketTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: OthRocketTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val obj = assets.obj(MODEL) ?: return null
             val texture = assets.texture(TEXTURE) ?: return null
             val size = size(entity)
             val turn = turn(meta(block))
             return ObjMeshes.get(obj, texture, size to turn) {
                 val t = Transform.gl(CENTER, Transform.rotate(turn, 0f, 1f, 0f), Transform.scale(size, size, size))
-                obj.mesh(texture).transformed(t).doubleSided().glowing()
+                obj
+                    .mesh(texture)
+                    .transformed(t)
+                    .doubleSided()
+                    .glowing()
             }
         }
     }
@@ -76,11 +85,18 @@ object OthTesrs {
      * 0.1 above the floor, turned by meta (4: 90°, 5: -90°, 3: 180°), normally lit. The scale is Waila's HUD
      * scale, 1 by default.
      */
-    class Figure(id: String, val model: String, val texture: String) :
-        AddonTesr<PlainTileEntity>(listOf(id), PlainTileEntity::class.java) {
+    class Figure(
+        id: String,
+        val model: String,
+        val texture: String,
+    ) : AddonTesr<PlainTileEntity>(listOf(id), PlainTileEntity::class.java) {
         override val rawTextures = setOf(texture)
 
-        override fun mesh(assets: ModAssets, entity: PlainTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: PlainTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val obj = assets.obj(model) ?: return null
             val texture = assets.texture(texture) ?: return null
             val turn = turn(meta(block))
@@ -90,12 +106,13 @@ object OthTesrs {
         }
 
         companion object {
-            fun turn(meta: Int): Float = when (meta) {
-                4 -> 90f
-                5 -> -90f
-                3 -> 180f
-                else -> 0f
-            }
+            fun turn(meta: Int): Float =
+                when (meta) {
+                    4 -> 90f
+                    5 -> -90f
+                    3 -> 180f
+                    else -> 0f
+                }
         }
     }
 

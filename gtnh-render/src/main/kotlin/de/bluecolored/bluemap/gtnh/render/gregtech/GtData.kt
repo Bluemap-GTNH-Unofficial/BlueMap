@@ -66,7 +66,11 @@ typealias GtFace = List<GtLayer>
 /** Per-side faces (index = ForgeDirection ordinal: 0 down, 1 up, 2 north, 3 south, 4 west, 5 east). */
 typealias GtSides = List<GtFace>
 
-class GtOutputFace(val down: GtFace, val up: GtFace, val side: GtFace)
+class GtOutputFace(
+    val down: GtFace,
+    val up: GtFace,
+    val side: GtFace,
+)
 
 class GtHatch(
     /** [inactive, active] front faces; may contain [GtLayer.BACKGROUND]. */
@@ -105,13 +109,29 @@ class GtMte(
 )
 
 /** An IIconContainer: base icon, optional overlay and render pass. */
-class GtIconRef(val texture: Key?, val overlay: Key?, val pass: Int)
+class GtIconRef(
+    val texture: Key?,
+    val overlay: Key?,
+    val pass: Int,
+)
 
-class GtMaterial(val id: Int, val name: String, val rgb: Int, val iconSet: String, val glowingOre: Boolean)
+class GtMaterial(
+    val id: Int,
+    val name: String,
+    val rgb: Int,
+    val iconSet: String,
+    val glowingOre: Boolean,
+)
 
-class GtOreTexture(val normal: GtIconRef?, val small: GtIconRef?)
+class GtOreTexture(
+    val normal: GtIconRef?,
+    val small: GtIconRef?,
+)
 
-class GtOreStone(val name: String, val background: GtFace)
+class GtOreStone(
+    val name: String,
+    val background: GtFace,
+)
 
 class GtOreBlock(
     val block: Key,
@@ -126,7 +146,12 @@ class GtOreTextures(
 )
 
 /** The decoded meta of a `gt.blockores2..7` block (`GTOreAdapter`). */
-data class GtOreMeta(val material: Int, val stone: Int, val small: Boolean, val natural: Boolean) {
+data class GtOreMeta(
+    val material: Int,
+    val stone: Int,
+    val small: Boolean,
+    val natural: Boolean,
+) {
     companion object {
         fun decode(meta: Int): GtOreMeta =
             GtOreMeta(
@@ -174,7 +199,10 @@ class GtData(
     fun dyeRgb(colour: Int): Int? = if (colour in 0 until DYES && colour < dyes.size) dyes[colour] else null
 
     /** A face as painted with `colour` (`mColor - 1`): machine-casing layers are swapped for their painted variant. */
-    fun paintMachineFace(face: GtFace, colour: Int): GtFace {
+    fun paintMachineFace(
+        face: GtFace,
+        colour: Int,
+    ): GtFace {
         if (colour !in 0 until DYES) return face
         var result: MutableList<GtLayer>? = null
         for ((i, layer) in face.withIndex()) {
@@ -186,7 +214,11 @@ class GtData(
         return result ?: face
     }
 
-    fun oreTexture(material: GtMaterial, stone: String?, small: Boolean): GtIconRef? {
+    fun oreTexture(
+        material: GtMaterial,
+        stone: String?,
+        small: Boolean,
+    ): GtIconRef? {
         val textures = oreTextures[material.iconSet] ?: return null
         val texture = stone?.let { textures.perStone[it] } ?: textures.default
         return if (small) texture.small else texture.normal
@@ -195,20 +227,33 @@ class GtData(
     /** Every texture any face or icon of the dump can draw. */
     fun textureKeys(): Set<Key> {
         val keys = HashSet<Key>()
+
         fun add(layer: GtLayer) {
             layer.texture?.let(keys::add)
             layer.overlay?.let(keys::add)
         }
+
         fun add(face: GtFace) = face.forEach(::add)
+
         fun add(icon: GtIconRef?) {
             icon?.texture?.let(keys::add)
             icon?.overlay?.let(keys::add)
         }
         for (mte in mtes.values) {
             mte.textures?.forEach { facing -> facing.forEach { sides -> sides.forEach(::add) } }
-            mte.outputFace?.forEach { add(it.down); add(it.up); add(it.side) }
-            mte.hatch?.let { hatch -> hatch.front.forEach(::add); hatch.defaultBackground.forEach(::add) }
-            mte.pipe?.let { add(it.connected); add(it.unconnected) }
+            mte.outputFace?.forEach {
+                add(it.down)
+                add(it.up)
+                add(it.side)
+            }
+            mte.hatch?.let { hatch ->
+                hatch.front.forEach(::add)
+                hatch.defaultBackground.forEach(::add)
+            }
+            mte.pipe?.let {
+                add(it.connected)
+                add(it.unconnected)
+            }
         }
         casings.values.forEach { it.forEach(::add) }
         machineCasings.forEach { tier -> tier.forEach { colour -> colour.forEach(::add) } }
@@ -217,7 +262,10 @@ class GtData(
         oreTextures.values.forEach { textures ->
             add(textures.default.normal)
             add(textures.default.small)
-            textures.perStone.values.forEach { add(it.normal); add(it.small) }
+            textures.perStone.values.forEach {
+                add(it.normal)
+                add(it.small)
+            }
         }
         add(noMaterialOre)
         return keys

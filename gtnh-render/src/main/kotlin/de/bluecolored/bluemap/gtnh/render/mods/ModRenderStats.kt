@@ -55,10 +55,11 @@ object ModRenderStats {
     fun snapshot(): Map<String, Map<String, Long>> {
         val result = TreeMap<String, Map<String, Long>>()
         for (name in rendered.keys + fallbacks.keys) {
-            result[name] = mapOf(
-                "rendered" to (rendered[name]?.sum() ?: 0L),
-                "fallback" to (fallbacks[name]?.sum() ?: 0L),
-            )
+            result[name] =
+                mapOf(
+                    "rendered" to (rendered[name]?.sum() ?: 0L),
+                    "fallback" to (fallbacks[name]?.sum() ?: 0L),
+                )
         }
         return result
     }

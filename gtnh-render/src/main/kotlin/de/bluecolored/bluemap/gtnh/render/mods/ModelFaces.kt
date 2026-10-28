@@ -40,37 +40,46 @@ import java.util.concurrent.ConcurrentHashMap
  * another block's look (connected-texture neighbours, AE2 / EnderIO facades). Captured `gtnh_quads` and JSON
  * models of unrotated elements are understood.
  */
-class ModelFaces(private val pack: ResourcePack) {
+class ModelFaces(
+    private val pack: ResourcePack,
+) {
     private val quadModels: QuadModelExtension? = pack.getExtension(QuadModelExtension.TYPE)
     private val faceTextures = ConcurrentHashMap<BlockState, Array<FaceLook?>>()
 
     /** A side's look: its texture and whether the block colour (biome tint) applies. */
-    data class FaceLook(val texture: Key, val tint: Boolean)
+    data class FaceLook(
+        val texture: Key,
+        val tint: Boolean,
+    )
 
     /** The quads of a model (null if it is neither a quad model nor a JSON model of unrotated elements). */
-    fun quads(model: Key): List<MeshQuad>? =
-        quadModels?.get(model)?.let(::fromQuadModel) ?: pack.models[model]?.let(::fromModel)
+    fun quads(model: Key): List<MeshQuad>? = quadModels?.get(model)?.let(::fromQuadModel) ?: pack.models[model]?.let(::fromModel)
 
     /** What [state] shows on its [face] side: the largest quad of its model on that block face. */
-    fun face(state: BlockState, face: Direction): FaceLook? {
-        val looks = faceTextures.computeIfAbsent(state) { s ->
-            val result = arrayOfNulls<FaceLook>(6)
-            val resource = pack.getBlockState(s) ?: return@computeIfAbsent result
-            var modelKey: Key? = null
-            resource.forEach(s, 0, 0, 0) { v -> if (modelKey == null) modelKey = v.model }
-            val quads = modelKey?.let(::quads) ?: return@computeIfAbsent result
-            for (dir in Direction.entries) {
-                result[dir.ordinal] = quads.filter { it.cullface == dir }.maxByOrNull(::area)?.let { FaceLook(it.texture, it.tint) }
+    fun face(
+        state: BlockState,
+        face: Direction,
+    ): FaceLook? {
+        val looks =
+            faceTextures.computeIfAbsent(state) { s ->
+                val result = arrayOfNulls<FaceLook>(6)
+                val resource = pack.getBlockState(s) ?: return@computeIfAbsent result
+                var modelKey: Key? = null
+                resource.forEach(s, 0, 0, 0) { v -> if (modelKey == null) modelKey = v.model }
+                val quads = modelKey?.let(::quads) ?: return@computeIfAbsent result
+                for (dir in Direction.entries) {
+                    result[dir.ordinal] = quads.filter { it.cullface == dir }.maxByOrNull(::area)?.let { FaceLook(it.texture, it.tint) }
+                }
+                result
             }
-            result
-        }
         return looks[face.ordinal]
     }
 
-    private fun fromQuadModel(model: QuadModel): List<MeshQuad> = model.quads.map { q ->
-        val rgb = (Math.round(q.r * 255) shl 16) or (Math.round(q.g * 255) shl 8) or Math.round(q.b * 255)
-        MeshQuad(q.positions, q.uvs, model.textures[q.texture], rgb, glow = q.lightEmission >= 15, tint = q.tint)
-    }
+    private fun fromQuadModel(model: QuadModel): List<MeshQuad> =
+        model.quads.map { q ->
+            val rgb = (Math.round(q.r * 255) shl 16) or (Math.round(q.g * 255) shl 8) or Math.round(q.b * 255)
+            MeshQuad(q.positions, q.uvs, model.textures[q.texture], rgb, glow = q.lightEmission >= 15, tint = q.tint)
+        }
 
     private fun fromModel(model: Model): List<MeshQuad>? {
         val elements = model.elements ?: return null
@@ -82,7 +91,13 @@ class ModelFaces(private val pack: ResourcePack) {
             for ((dir, face) in element.faces) {
                 val texture: Key = face.texture.getTexturePath(model.textures::get) ?: continue
                 val uv = face.uv
-                val quad = Faces.face(dir, from, to, FaceTexture(texture, uv.x / 16f, uv.y / 16f, uv.z / 16f, uv.w / 16f, face.rotation / 90))
+                val quad =
+                    Faces.face(
+                        dir,
+                        from,
+                        to,
+                        FaceTexture(texture, uv.x / 16f, uv.y / 16f, uv.z / 16f, uv.w / 16f, face.rotation / 90),
+                    )
                 quads.add(if (face.tintindex >= 0) MeshQuad(quad.positions, quad.uvs, quad.texture, tint = true) else quad)
             }
         }
@@ -109,7 +124,10 @@ class ModelFaces(private val pack: ResourcePack) {
          * The BlueMap block state of a 1.7 block named in NBT (`modid:name` + meta), exactly as the legacy loader maps
          * placed blocks: vanilla blocks through the 1.13 flattening table, modded ones to `N(modid):N(name)[meta]`.
          */
-        fun legacyState(registryName: String, meta: Int): BlockState? {
+        fun legacyState(
+            registryName: String,
+            meta: Int,
+        ): BlockState? {
             val name = if (':' in registryName) registryName else "minecraft:$registryName"
             if (name.startsWith("minecraft:")) return VanillaFlattening.state(name, meta)
             return RegistryBlockStateMapper.identityState(name, meta)

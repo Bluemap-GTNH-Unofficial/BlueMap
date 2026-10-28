@@ -55,19 +55,29 @@ import kotlin.math.roundToInt
  * A resource pack in a temp dir plus a fake world, rendering blocks through BlueMap's real resource loading,
  * [BlockNeighborhood] and tile model.
  */
-class ModTestKit(val root: Path) {
+class ModTestKit(
+    val root: Path,
+) {
     init {
         GtnhRender.register()
         file("assets/minecraft/atlases/blocks.json", """{"sources": [{"type": "minecraft:directory", "source": "", "prefix": ""}]}""")
     }
 
-    fun file(path: String, content: String) {
+    fun file(
+        path: String,
+        content: String,
+    ) {
         val file = root.resolve(path)
         file.parent.createDirectories()
         file.writeText(content)
     }
 
-    fun png(path: String, rgb: Int, width: Int = 16, height: Int = 16) {
+    fun png(
+        path: String,
+        rgb: Int,
+        width: Int = 16,
+        height: Int = 16,
+    ) {
         val file = root.resolve(path)
         file.parent.createDirectories()
         val image = BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
@@ -76,8 +86,19 @@ class ModTestKit(val root: Path) {
     }
 
     /** A full cube JSON model with [texture] on all faces (cullfaces set). */
-    fun cubeModel(path: String, texture: String) {
-        val faces = listOf("down", "up", "north", "south", "west", "east").joinToString(",") { """"$it": {"texture": "#all", "cullface": "$it"}""" }
+    fun cubeModel(
+        path: String,
+        texture: String,
+    ) {
+        val faces =
+            listOf(
+                "down",
+                "up",
+                "north",
+                "south",
+                "west",
+                "east",
+            ).joinToString(",") { """"$it": {"texture": "#all", "cullface": "$it"}""" }
         file(path, """{"textures": {"all": "$texture"}, "elements": [{"from": [0,0,0], "to": [16,16,16], "faces": {$faces}}]}""")
     }
 
@@ -104,9 +125,14 @@ class ModTestKit(val root: Path) {
             override fun isRenderTopOnly() = false
         }
 
-    class Cell(val state: BlockState, val entity: BlockEntity? = null)
+    class Cell(
+        val state: BlockState,
+        val entity: BlockEntity? = null,
+    )
 
-    private class World(val cells: Map<Triple<Int, Int, Int>, Cell>) : BlockAccess {
+    private class World(
+        val cells: Map<Triple<Int, Int, Int>, Cell>,
+    ) : BlockAccess {
         private var x = 0
         private var y = 0
         private var z = 0
@@ -114,7 +140,11 @@ class ModTestKit(val root: Path) {
 
         private fun cell() = cells[Triple(x, y, z)]
 
-        override fun set(x: Int, y: Int, z: Int) {
+        override fun set(
+            x: Int,
+            y: Int,
+            z: Int,
+        ) {
             this.x = x
             this.y = y
             this.z = z
@@ -142,7 +172,13 @@ class ModTestKit(val root: Path) {
     }
 
     /** One drawn triangle. */
-    data class Triangle(val texture: Int, val positions: FloatArray, val uvs: FloatArray, val rgb: Triple<Float, Float, Float>, val blockLight: Int) {
+    data class Triangle(
+        val texture: Int,
+        val positions: FloatArray,
+        val uvs: FloatArray,
+        val rgb: Triple<Float, Float, Float>,
+        val blockLight: Int,
+    ) {
         val normal: FloatArray
             get() {
                 val p = positions
@@ -165,47 +201,87 @@ class ModTestKit(val root: Path) {
         fun uvCenter(axis: Int): Float = (uvs[axis] + uvs[2 + axis] + uvs[4 + axis]) / 3f
     }
 
-    private class Recorder(private val model: ArrayTileModel = ArrayTileModel(64)) : TileModel by model {
+    private class Recorder(
+        private val model: ArrayTileModel = ArrayTileModel(64),
+    ) : TileModel by model {
         val positions = HashMap<Int, FloatArray>()
         val uvs = HashMap<Int, FloatArray>()
         val textures = HashMap<Int, Int>()
         val colors = HashMap<Int, Triple<Float, Float, Float>>()
         val blockLights = HashMap<Int, Int>()
 
-        override fun setPositions(face: Int, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, x3: Float, y3: Float, z3: Float): TileModel {
+        override fun setPositions(
+            face: Int,
+            x1: Float,
+            y1: Float,
+            z1: Float,
+            x2: Float,
+            y2: Float,
+            z2: Float,
+            x3: Float,
+            y3: Float,
+            z3: Float,
+        ): TileModel {
             positions[face] = floatArrayOf(x1, y1, z1, x2, y2, z2, x3, y3, z3)
             return model.setPositions(face, x1, y1, z1, x2, y2, z2, x3, y3, z3)
         }
 
-        override fun setUvs(face: Int, u1: Float, v1: Float, u2: Float, v2: Float, u3: Float, v3: Float): TileModel {
+        override fun setUvs(
+            face: Int,
+            u1: Float,
+            v1: Float,
+            u2: Float,
+            v2: Float,
+            u3: Float,
+            v3: Float,
+        ): TileModel {
             uvs[face] = floatArrayOf(u1, v1, u2, v2, u3, v3)
             return model.setUvs(face, u1, v1, u2, v2, u3, v3)
         }
 
-        override fun setMaterialIndex(face: Int, m: Int): TileModel {
+        override fun setMaterialIndex(
+            face: Int,
+            m: Int,
+        ): TileModel {
             textures[face] = m
             return model.setMaterialIndex(face, m)
         }
 
-        override fun setColor(face: Int, r: Float, g: Float, b: Float): TileModel {
+        override fun setColor(
+            face: Int,
+            r: Float,
+            g: Float,
+            b: Float,
+        ): TileModel {
             colors[face] = Triple(r, g, b)
             return model.setColor(face, r, g, b)
         }
 
-        override fun setBlocklight(face: Int, bl: Int): TileModel {
+        override fun setBlocklight(
+            face: Int,
+            bl: Int,
+        ): TileModel {
             blockLights[face] = bl
             return model.setBlocklight(face, bl)
         }
 
-        fun triangles(): List<Triangle> = (0 until size()).map { f ->
-            Triangle(textures.getValue(f), positions.getValue(f), uvs.getValue(f), colors.getValue(f), blockLights.getValue(f))
-        }
+        fun triangles(): List<Triangle> =
+            (0 until size()).map { f ->
+                Triangle(textures.getValue(f), positions.getValue(f), uvs.getValue(f), colors.getValue(f), blockLights.getValue(f))
+            }
     }
 
-    class Result(val triangles: List<Triangle>, val color: Color, val variant: Variant)
+    class Result(
+        val triangles: List<Triangle>,
+        val color: Color,
+        val variant: Variant,
+    )
 
     /** Renders [center] at (1, 65, 1) with [neighbours] at offsets from it. */
-    fun render(center: Cell, vararg neighbours: Pair<Triple<Int, Int, Int>, Cell>): Result {
+    fun render(
+        center: Cell,
+        vararg neighbours: Pair<Triple<Int, Int, Int>, Cell>,
+    ): Result {
         // not (0, 0, 0) modulo the neighbourhood size: a fresh BlockNeighborhood believes it is already there
         val (x, y, z) = Triple(1, 65, 1)
         val cells = HashMap<Triple<Int, Int, Int>, Cell>()
@@ -223,7 +299,10 @@ class ModTestKit(val root: Path) {
     }
 
     companion object {
-        fun state(id: String, meta: Int) = BlockState(Key.parse(id), mapOf("meta" to meta.toString()))
+        fun state(
+            id: String,
+            meta: Int,
+        ) = BlockState(Key.parse(id), mapOf("meta" to meta.toString()))
 
         /** Unit normal of a mesh quad (front side). */
         fun normal(q: MeshQuad): FloatArray = QuadModel.normal(q.positions)

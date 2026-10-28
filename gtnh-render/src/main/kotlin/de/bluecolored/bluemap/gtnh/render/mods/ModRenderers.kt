@@ -28,17 +28,17 @@ import de.bluecolored.bluemap.core.map.hires.block.BlockRendererFactory
 import de.bluecolored.bluemap.core.map.hires.block.BlockRendererType
 import de.bluecolored.bluemap.core.resources.pack.resourcepack.ResourcePack
 import de.bluecolored.bluemap.core.util.Key
+import de.bluecolored.bluemap.core.world.mca.blockentity.BlockEntityType
+import de.bluecolored.bluemap.gtnh.render.mods.addons.AddonTesrs
 import de.bluecolored.bluemap.gtnh.render.mods.ae2.Ae2CableBusRenderer
 import de.bluecolored.bluemap.gtnh.render.mods.ae2.Ae2CableBusTileEntity
 import de.bluecolored.bluemap.gtnh.render.mods.bibliocraft.BiblioCraftRenderer
-import de.bluecolored.bluemap.gtnh.render.mods.enderio.EioConduitBundleTileEntity
-import de.bluecolored.bluemap.gtnh.render.mods.enderio.EnderIoConduitRenderer
 import de.bluecolored.bluemap.gtnh.render.mods.bibliocraft.BiblioTileEntity
 import de.bluecolored.bluemap.gtnh.render.mods.chisel.ChiselCtmRenderer
 import de.bluecolored.bluemap.gtnh.render.mods.ctm.MyCtmRenderer
-import de.bluecolored.bluemap.gtnh.render.mods.addons.AddonTesrs
+import de.bluecolored.bluemap.gtnh.render.mods.enderio.EioConduitBundleTileEntity
+import de.bluecolored.bluemap.gtnh.render.mods.enderio.EnderIoConduitRenderer
 import de.bluecolored.bluemap.gtnh.render.mods.ironchest.IronChestRenderer
-import de.bluecolored.bluemap.core.world.mca.blockentity.BlockEntityType
 
 /**
  * Renderers for the most visible non-GregTech blocks of a GTNH base. The exporter selects them per blockstate
@@ -64,11 +64,13 @@ object ModRenderers {
     @JvmField
     val ENDERIO_CONDUIT: BlockRendererType = type("enderio_conduit", BlockRendererFactory(::EnderIoConduitRenderer))
 
-    val ALL: List<BlockRendererType> = listOf(CHISEL_CTM, MYCTMLIB, IRON_CHEST, BIBLIOCRAFT, AE2_CABLE_BUS, ENDERIO_CONDUIT, AddonTesrs.TYPE)
+    val ALL: List<BlockRendererType> =
+        listOf(CHISEL_CTM, MYCTMLIB, IRON_CHEST, BIBLIOCRAFT, AE2_CABLE_BUS, ENDERIO_CONDUIT, AddonTesrs.TYPE)
 
     /** Raw jar textures the tile-entity renderers draw (added to the atlas when the pack has them). */
     val RAW_TEXTURES: Set<String> by lazy {
-        IronChestRenderer.RAW_TEXTURES + BiblioCraftRenderer.RAW_TEXTURES + Ae2CableBusRenderer.RAW_TEXTURES + EnderIoConduitRenderer.RAW_TEXTURES +
+        IronChestRenderer.RAW_TEXTURES + BiblioCraftRenderer.RAW_TEXTURES + Ae2CableBusRenderer.RAW_TEXTURES +
+            EnderIoConduitRenderer.RAW_TEXTURES +
             AddonTesrs.RAW_TEXTURES
     }
 
@@ -92,6 +94,8 @@ object ModRenderers {
         ModRenderStats.install()
     }
 
-    private fun type(name: String, factory: BlockRendererFactory): BlockRendererType =
-        BlockRendererType.Impl(Key("gtnh", name), factory)
+    private fun type(
+        name: String,
+        factory: BlockRendererFactory,
+    ): BlockRendererType = BlockRendererType.Impl(Key("gtnh", name), factory)
 }

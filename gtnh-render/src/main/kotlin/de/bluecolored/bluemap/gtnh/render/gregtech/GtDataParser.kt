@@ -30,11 +30,16 @@ import com.google.gson.JsonObject
 import de.bluecolored.bluemap.core.util.Key
 
 /**
- * Parses the exporter's GregTech dump (`gtnh/gregtech/{mte,casings,materials,ores}.json`, schema in
- * `tools/gtnh-exporter/README.md` "GregTech dump"). Each file is optional; a missing one leaves its part empty.
+ * Parses the exporter's GregTech dump (`gtnh/gregtech/{mte,casings,materials,ores}.json`, schema in the gtnh-exporter
+ * repository's README, "GregTech dump"). Each file is optional; a missing one leaves its part empty.
  */
 object GtDataParser {
-    fun parse(mte: JsonObject?, casings: JsonObject?, materials: JsonObject?, ores: JsonObject?): GtData {
+    fun parse(
+        mte: JsonObject?,
+        casings: JsonObject?,
+        materials: JsonObject?,
+        ores: JsonObject?,
+    ): GtData {
         val render = mte?.obj("render")
         val mteLayers = mte?.let { layers(it.array("layers")) } ?: emptyList()
         val mteFaces = mte?.array("faces")?.map { face(it.asJsonArray, mteLayers) } ?: emptyList()
@@ -71,7 +76,10 @@ object GtDataParser {
         val iconSets = HashMap<String, Map<String, GtIconRef>>()
         materials?.obj("iconSets")?.entrySet()?.forEach { (name, value) ->
             val icons = HashMap<String, GtIconRef>()
-            value.asJsonObject.obj("blockIcons")?.entrySet()?.forEach { (type, icon) -> icons[type] = iconRef(icon.asJsonObject) }
+            value.asJsonObject
+                .obj("blockIcons")
+                ?.entrySet()
+                ?.forEach { (type, icon) -> icons[type] = iconRef(icon.asJsonObject) }
             iconSets[name] = icons
         }
         val dyes = IntArray(GtData.DYES) { GtLayer.WHITE }
@@ -120,8 +128,12 @@ object GtDataParser {
         )
     }
 
-    private fun mteEntry(entry: JsonObject, faces: List<GtFace>): GtMte? {
+    private fun mteEntry(
+        entry: JsonObject,
+        faces: List<GtFace>,
+    ): GtMte? {
         val id = entry.get("id")?.asInt ?: return null
+
         fun face(element: JsonElement?): GtFace = element?.asInt?.let { faces.getOrNull(it) } ?: emptyList()
 
         val textures =
@@ -194,7 +206,10 @@ object GtDataParser {
         }
 
     /** A face from layer indices; pass-1 layers are drawn after pass-0 ones, as GT's two world passes do. */
-    private fun face(indices: JsonArray, layers: List<GtLayer>): GtFace {
+    private fun face(
+        indices: JsonArray,
+        layers: List<GtLayer>,
+    ): GtFace {
         val face = indices.mapNotNull { layers.getOrNull(it.asInt) }
         return if (face.zipWithNext().all { (a, b) -> a.pass <= b.pass }) face else face.sortedBy { it.pass }
     }
@@ -207,6 +222,7 @@ object GtDataParser {
     internal fun rgb(element: JsonElement?): Int {
         val array = element?.takeIf { it.isJsonArray }?.asJsonArray ?: return GtLayer.WHITE
         if (array.size() < 3) return GtLayer.WHITE
+
         fun channel(i: Int) = array[i].asInt.coerceIn(0, 255)
         return (channel(0) shl 16) or (channel(1) shl 8) or channel(2)
     }

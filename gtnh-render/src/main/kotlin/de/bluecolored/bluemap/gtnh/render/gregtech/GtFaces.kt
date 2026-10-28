@@ -29,7 +29,11 @@ import de.bluecolored.bluemap.core.util.Key
 /** Chooses the layered faces GT shows for a block, from the dump and the tile entity / block meta. */
 object GtFaces {
     /** Faces of a (non-pipe) machine: front per facing, active state, basic-machine output side, hatch casing, paint. */
-    fun machine(data: GtData, mte: GtMte, te: GtTileEntity): GtSides? {
+    fun machine(
+        data: GtData,
+        mte: GtMte,
+        te: GtTileEntity,
+    ): GtSides? {
         val facing = te.facing.takeIf { it in 0 until 6 } ?: Side.NORTH
         val active = if (te.active) 1 else 0
         val colour = te.colourIndex
@@ -56,12 +60,24 @@ object GtFaces {
     }
 
     /** A hatch's faces: casing background on every side, front overlays on the facing side. */
-    internal fun hatch(data: GtData, mte: GtMte, hatch: GtHatch, casingTextureId: Int, facing: Int, active: Int, colour: Int): GtSides {
+    internal fun hatch(
+        data: GtData,
+        mte: GtMte,
+        hatch: GtHatch,
+        casingTextureId: Int,
+        facing: Int,
+        active: Int,
+        colour: Int,
+    ): GtSides {
         val casing = casingTextureId.takeIf { it > 0 }?.let { data.casings[it] }
         return (0 until 6).map { side ->
             val background =
                 casing?.getOrNull(side)
-                    ?: data.machineCasings.getOrNull(mte.tier)?.getOrNull(colour + 1)?.getOrNull(side)?.takeIf { colour >= 0 }
+                    ?: data.machineCasings
+                        .getOrNull(mte.tier)
+                        ?.getOrNull(colour + 1)
+                        ?.getOrNull(side)
+                        ?.takeIf { colour >= 0 }
                     ?: hatch.defaultBackground.getOrNull(side)
                     ?: emptyList()
             if (side != facing) return@map background
@@ -71,7 +87,13 @@ object GtFaces {
     }
 
     /** Face of a pipe/cable/MTE frame on [side], tinted with its paint ([colour] = `mColor - 1`). */
-    fun pipe(data: GtData, pipe: GtPipe, connections: Int, side: Int, colour: Int): GtFace {
+    fun pipe(
+        data: GtData,
+        pipe: GtPipe,
+        connections: Int,
+        side: Int,
+        colour: Int,
+    ): GtFace {
         val face = if (GtPipeGeometry.showsConnectedTexture(connections, side)) pipe.connected else pipe.unconnected
         val dye = data.dyeRgb(colour) ?: return face
         return face.map { layer -> if (isPaintedPipeLayer(pipe, layer)) layer.withRgb(dye) else layer }
@@ -81,14 +103,21 @@ object GtFaces {
      * Which pipe layers take the paint colour (GT `Dyes.getModulation(colour, default)`): an insulated cable paints
      * its insulation (the layers not tinted with the wire material), everything else its material-tinted layers.
      */
-    private fun isPaintedPipeLayer(pipe: GtPipe, layer: GtLayer): Boolean {
+    private fun isPaintedPipeLayer(
+        pipe: GtPipe,
+        layer: GtLayer,
+    ): Boolean {
         val material = pipe.materialRgb ?: return false
         if (layer.texture == null) return false
         return if (pipe.insulated) layer.rgb != material && layer.rgb != GtLayer.WHITE else layer.rgb == material
     }
 
     /** All six faces of a `gt.blockores2..7` block (`GTBlockOre.getTextures`), null if the block is not in the dump. */
-    fun ore(data: GtData, block: Key, meta: Int): GtFace? {
+    fun ore(
+        data: GtData,
+        block: Key,
+        meta: Int,
+    ): GtFace? {
         val ore = data.oreBlocks[block] ?: return null
         val decoded = GtOreMeta.decode(meta)
         val stone = ore.stones.getOrNull(decoded.stone) ?: data.oreBlocks[DEFAULT_ORE_BLOCK]?.stones?.getOrNull(0)
@@ -106,7 +135,10 @@ object GtFaces {
     }
 
     /** All six faces of a `gt.blockframes` block: the material (`meta & 0xFFF`) frame icon, tinted. */
-    fun frame(data: GtData, meta: Int): GtFace? {
+    fun frame(
+        data: GtData,
+        meta: Int,
+    ): GtFace? {
         val material = data.materials[meta and FRAME_MATERIAL_MASK] ?: return null
         val icon = data.iconSets[material.iconSet]?.get(FRAME_ICON) ?: return null
         if (icon.texture == null && icon.overlay == null) return null
@@ -114,7 +146,11 @@ object GtFaces {
     }
 
     /** Last resort for an unknown or untextured machine: the unpainted ULV machine casing. */
-    fun casingFallback(data: GtData): GtSides? = data.machineCasings.firstOrNull()?.firstOrNull()?.takeIf { sides -> sides.any { it.isNotEmpty() } }
+    fun casingFallback(data: GtData): GtSides? =
+        data.machineCasings
+            .firstOrNull()
+            ?.firstOrNull()
+            ?.takeIf { sides -> sides.any { it.isNotEmpty() } }
 
     val DEFAULT_ORE_BLOCK = Key("gregtech", "gt.blockores2")
     const val FRAME_MATERIAL_MASK = 0xFFF

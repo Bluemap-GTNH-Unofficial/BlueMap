@@ -42,7 +42,9 @@ import kotlin.io.path.isRegularFile
  * and the Wavefront / JSON models the index lists. Each file comes from the highest-priority pack that has it. Only
  * textures a renderer can use enter the atlas.
  */
-class ModAssets(private val pack: ResourcePack) : ResourcePackExtension {
+class ModAssets(
+    private val pack: ResourcePack,
+) : ResourcePackExtension {
     @Volatile
     private var assets: Map<String, String> = emptyMap()
 
@@ -108,9 +110,15 @@ class ModAssets(private val pack: ResourcePack) : ResourcePackExtension {
         assets = index?.getAsJsonObject("assets")?.entrySet()?.associate { (k, v) -> k to v.asString } ?: emptyMap()
         chisel = chiselJson?.let(ChiselData::parse)
         myCtm = myCtmJson?.let(MyCtmData::parse)
-        aspectColors = aspectsJson?.getAsJsonObject("aspects")?.entrySet()
-            ?.mapNotNull { (tag, color) -> color.asString.removePrefix("#").toIntOrNull(16)?.let { tag to it } }
-            ?.toMap() ?: emptyMap()
+        aspectColors = aspectsJson
+            ?.getAsJsonObject("aspects")
+            ?.entrySet()
+            ?.mapNotNull { (tag, color) ->
+                color.asString
+                    .removePrefix("#")
+                    .toIntOrNull(16)
+                    ?.let { tag to it }
+            }?.toMap() ?: emptyMap()
         synchronized(objModels) {
             objModels.clear()
             objModels.putAll(objs)

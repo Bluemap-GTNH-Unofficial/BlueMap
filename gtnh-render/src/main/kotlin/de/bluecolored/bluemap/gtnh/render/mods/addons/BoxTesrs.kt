@@ -53,7 +53,14 @@ class BoxRingTileEntity : MCABlockEntity() {
 
     /** The rings drawn: the small core always, the 1..3 big ones while shown. */
     fun ringScales(): List<Float> {
-        val big = if (ringSwitch && renderStatus) BoxTesrs.Ring.BIG_SCALES.take(count.coerceIn(1, 3)).map { it * scale } else emptyList()
+        val big =
+            if (ringSwitch && renderStatus) {
+                BoxTesrs.Ring.BIG_SCALES
+                    .take(count.coerceIn(1, 3))
+                    .map { it * scale }
+            } else {
+                emptyList()
+            }
         return big + BoxTesrs.Ring.CORE_SCALE
     }
 }
@@ -73,14 +80,23 @@ object BoxTesrs {
 
         override val rawTextures = setOf(TEXTURE)
 
-        override fun mesh(assets: ModAssets, entity: BoxRingTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: BoxRingTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val obj = assets.obj(MODEL) ?: return null
             val texture = assets.texture(TEXTURE) ?: return null
-            val rings = entity.ringScales().map { s ->
-                ObjMeshes.get(obj, texture, s) {
-                    obj.mesh(texture).transformed(Transform.gl(CENTER, Transform.scale(s, s, s))).doubleSided().glowing()
+            val rings =
+                entity.ringScales().map { s ->
+                    ObjMeshes.get(obj, texture, s) {
+                        obj
+                            .mesh(texture)
+                            .transformed(Transform.gl(CENTER, Transform.scale(s, s, s)))
+                            .doubleSided()
+                            .glowing()
+                    }
                 }
-            }
             return Mesh(rings.flatMap { it.quads })
         }
     }
