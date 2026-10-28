@@ -1,74 +1,69 @@
-[![title-banner](https://bluecolored.de/paste/BluemapBanner.png)](https://bluemap.bluecolored.de/)
+# BlueMap (GTNH port fork)
 
-<div align="center">
+> [!WARNING]
+> **Unofficial fork. Use at your own risk.**
+>
+> - This is **not** affiliated with, endorsed by or supported by [BlueMap](https://github.com/BlueMap-Minecraft/BlueMap)
+>   or the [GT New Horizons](https://github.com/GTNewHorizons) team. Do not report problems with this fork to them.
+> - It is **vibe coded**: most of the port was written by an AI coding agent under human direction. It is tested but
+>   has not been audited.
+> - There is **no warranty and no quality guarantee**. Back up your world before installing it.
 
-create **3D**-maps of your Minecraft worlds and display them in your browser  
-**>> [DEMO MAP](https://bluecolored.de/bluemap) <<**
+This is a fork of [BlueMap](https://github.com/BlueMap-Minecraft/BlueMap) 5.29 that ports it to **Minecraft 1.7.10**
+and the **GT New Horizons 2.9.0-RC-2** modpack. It is the main code repository of
+[Bluemap-GTNH-Unofficial/BlueMap-GTNH](https://github.com/Bluemap-GTNH-Unofficial/BlueMap-GTNH). **Go there for
+installation instructions, screenshots, the current status and releases.**
 
+![Formed community addon multiblocks rendered by the server mod](https://raw.githubusercontent.com/Bluemap-GTNH-Unofficial/BlueMap-GTNH/main/docs/images/addons-multiblocks.jpg)
 
-[![GitHub issues](https://img.shields.io/github/issues-raw/BlueMap-Minecraft/BlueMap)](https://github.com/orgs/BlueMap-Minecraft/projects/2)
-[![GitHub all releases](https://img.shields.io/github/downloads/BlueMap-Minecraft/BlueMap/total)](https://github.com/BlueMap-Minecraft/BlueMap/releases)
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/BlueMap-Minecraft/BlueMap)](https://github.com/BlueMap-Minecraft/BlueMap/releases/latest)
-[![Discord](https://img.shields.io/discord/665868367416131594?label=discord)](https://discord.gg/zmkyJa3)
+## What this fork adds
 
-</div>
+| Module | What it does |
+|---|---|
+| `legacy/` | World loader `gtnh:anvil_1_7` for 1.7.10 Anvil worlds, including EndlessIDs / ChunkAPI extended block IDs and 16-bit metadata, with block names from the FML registry in `level.dat`. Flattens vanilla 1.7.10 blocks to 1.13 block states, including neighbour-dependent shapes. |
+| `gtnh-render/` | Renderers and resource-pack extensions for modded blocks: models captured by the client exporter, GregTech machines, pipes, cables, ores and frames, Chisel connected textures, Iron Chests, BiblioCraft, Applied Energistics 2, EnderIO and community addons. |
+| `implementations/gtnh/` | The Forge 1.7.10 server mod `bluemap-<version>-gtnh.<n>.jar` (Kotlin, Java 25 bytecode, runs on the pack's Java 17-26 server through lwjgl3ify). It shades BlueMap core and common. See [its README](implementations/gtnh/README.md). |
+| `testing/fixtures/` | Shared test vectors used by this repository and the sibling tool repositories. |
 
-<br>
-<br>
+Changes to upstream code are kept small: a configurable world loader per map, a few hooks in the Anvil region and
+data-pack code, and build changes for Kotlin modules. Upstream sources and headers are otherwise unchanged.
 
-## What is BlueMap
-BlueMap is a program that reads your Minecraft world files and generates not only a map, but also 3D-models of the whole surface.
-With the web-app you then can look at those in your browser and basically view the world as if you were ingame! 
-Or just look at it from far away to get an overview.
+The client exporter, the test harness, the orchestrator, the e2e suite and the Modernity tool live in their own
+repositories, checked out next to this one by the umbrella repository.
 
-[![screenshot](https://bluecolored.de/paste/BlueMapScreenshot.jpg?2)](https://bluecolored.de/bluemap)
+## Build
 
-BlueMap comes as a Spigot/Paper or Sponge Plugin, as a Fabric or Forge-Mod and you can also use BlueMap without any Server
-from the Command-Line as a standalone tool.
+The fork builds and tests on its own (clone with `--recursive` for upstream's `api` submodule). The sibling tool
+repositories depend on it, not the other way round; a few optional tests and scripts use the workspace when the
+umbrella is checked out. Java comes from [mise](https://mise.jdx.dev/); `mise.toml` pins Temurin 25.
 
-If installed as a Plugin/Mod, BlueMap **renders asynchronously** to your MinecraftServer-Thread. 
-This means at no time it will block your server-thread directly. 
-So as long as your CPU is not fully utilized, your server should not be slowed down while BlueMap is rendering.
+```bash
+# BlueMap modules, including legacy and gtnh-render
+mise exec -- ./gradlew :legacy:test :gtnh-render:test
 
+# Server mod (separate GTNHGradle build that includes this one); needs a Java 8 toolchain too
+cd implementations/gtnh
+mise exec java@temurin-25.0.5+8.0.LTS -- ./gradlew \
+  -Porg.gradle.java.installations.paths=$(mise where java@zulu-8.98.0.107)/Contents/Home,$(mise where java@temurin-25.0.5+8.0.LTS)/Contents/Home \
+  build
+```
 
-## Using BlueMap
-You can download BlueMap from [here](https://github.com/BlueMap-Minecraft/BlueMap/releases).  
-Read the [installation instructions](https://bluemap.bluecolored.de/wiki/getting-started/Installation.html) to get started!
+The server mod jar is `implementations/gtnh/build/libs/bluemap-5.29-gtnh.1.jar`. The upstream platforms (Fabric,
+Forge, Paper and so on) still build as before but are not maintained or tested in this fork.
 
-Here you can see how many servers are using BlueMap:
+## Upstream
 
-[![BlueMap Graph](https://metrics.bluecolored.de/bluemap/graph.php?1)](https://metrics.bluecolored.de/)
+All credit for BlueMap goes to Blue (Lukas Rieger) and the
+[BlueMap contributors](https://github.com/BlueMap-Minecraft/BlueMap/graphs/contributors). For BlueMap itself (the
+supported platforms, the wiki, Discord and the original README) see
+[BlueMap-Minecraft/BlueMap](https://github.com/BlueMap-Minecraft/BlueMap) and
+[bluemap.bluecolored.de](https://bluemap.bluecolored.de/). Please do not ask the upstream project for help with this
+fork.
 
-## Development
-### Clone
-If you have git installed, simply use the command `git clone --recursive https://github.com/BlueMap-Minecraft/BlueMap.git` to clone BlueMap.
+## Licence
 
-### Build
-In order to build BlueMap you simply need to run the `./gradlew release` command in BlueMap's root directory.
-You can find the compiled JAR files in `./build/release`.
-
-### Issues
-You found a bug, have another issue?  
-First, make sure it's not on your end, if you are unsure you can always ask about it in our [Discord](https://bluecolo.red/map-discord).  
-If you are sure it's a bug on BlueMap's end, please create an issue [here](https://github.com/BlueMap-Minecraft/BlueMap/issues)!
-
-### Contributing
-You are welcome to contribute!
-Just create a pull request with your changes :)
-
-**If you want to have your changes merged, make sure they are complete, documented and well tested!**
-
-Keep in mind that we have to maintain all new features and keep supporting them in the future.
-This means we always can decide to not accept a PR for any reason.
-
-## Links
-**TODO-List:** https://github.com/orgs/BlueMap-Minecraft/projects/2  
-**Wiki:** https://bluecolo.red/map-wiki  
-**Discord:** https://bluecolo.red/map-discord  
-**Reddit:** https://www.reddit.com/r/BlueMap  
-
----
-
-[![JetBrainsLogo](https://bluemap.bluecolored.de/assets/jetbrains.svg)](https://www.jetbrains.com/?from=BlueMap)<br>
-<br>
-Special thanks to [JetBrains](https://www.jetbrains.com/?from=BlueMap) for giving out an OpenSource-Licence for BlueMap development!
+MIT, as upstream, except where [NOTICE.md](NOTICE.md) says otherwise: one function adapted from GT: Not Leisure (and
+two beam angle lines) stays LGPL-3.0, code adapted from MyCTMLib keeps its MIT notice, and Kotlin re-implementations
+of Minecraft behaviour are credited to Mojang. [LICENSE](LICENSE) keeps the upstream copyright and adds the copyright
+of the GTNH port additions. The full list, including textures in screenshots, is the umbrella repository's
+[NOTICE.md](https://github.com/Bluemap-GTNH-Unofficial/BlueMap-GTNH/blob/main/NOTICE.md).
