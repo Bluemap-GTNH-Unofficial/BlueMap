@@ -38,6 +38,7 @@ import de.bluecolored.bluemap.gtnh.render.mods.Mesh
 import de.bluecolored.bluemap.gtnh.render.mods.MeshBuilder
 import de.bluecolored.bluemap.gtnh.render.mods.ModAssets
 import de.bluecolored.bluemap.gtnh.render.mods.ModBlockRenderer
+import de.bluecolored.bluemap.gtnh.render.mods.ModelFaces
 import de.bluecolored.bluenbt.NBTName
 import java.util.concurrent.ConcurrentHashMap
 
@@ -74,6 +75,18 @@ class EioConduitBundleTileEntity : MCABlockEntity() {
     var conduits: List<EioConduitEntry> = emptyList()
         private set
 
+    /** The facade block's registry name (`"null"` without a facade) and meta. */
+    @field:NBTName("facadeId")
+    var facadeId: String = "null"
+        private set
+
+    @field:NBTName("facadeMeta")
+    var facadeMeta: Int = 0
+        private set
+
+    /** The facade's block (`modid:name`, meta), if the bundle has one. */
+    val facade: Pair<String, Int>? get() = facadeId.takeIf { it.isNotEmpty() && it != "null" }?.let { it to facadeMeta }
+
     companion object {
         val BLOCK_ENTITY_TYPE: BlockEntityType =
             BlockEntityType.Impl(Key.minecraft("blockConduitBundleTileEntity"), EioConduitBundleTileEntity::class.java)
@@ -84,7 +97,7 @@ class EioConduitBundleTileEntity : MCABlockEntity() {
  * `gtnh:enderio_conduit`: EnderIO conduit bundles from the tile entity's conduit list: per conduit a core and an arm
  * towards every connection (conduit and external), in EnderIO's geometry (`ConduitGeometryUtil` at the default
  * conduit scale 0.6, `Offsets` per conduit type and axis when the bundle holds several types), with the conduit's
- * own core/body textures. Facades and connection plates are not drawn.
+ * own core/body textures. A bundle with a facade is drawn as the facade's block. Connection plates are not drawn.
  */
 class EnderIoConduitRenderer(resourcePack: ResourcePack, textureGallery: TextureGallery, renderSettings: RenderSettings) :
     ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
@@ -92,6 +105,11 @@ class EnderIoConduitRenderer(resourcePack: ResourcePack, textureGallery: Texture
 
     override fun render(assets: ModAssets, block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color): Boolean {
         val te = block.blockEntity as? EioConduitBundleTileEntity ?: return false
+        // a facade hides the conduits: the bundle looks like the facade's block
+        te.facade?.let { (name, meta) ->
+            val state = ModelFaces.legacyState(name, meta)
+            if (state != null && renderState(state, block, blockModel, color)) return true
+        }
         val conduits = te.conduits.mapNotNull { entry ->
             val type = Kind.of(entry.conduitType) ?: return@mapNotNull null
             val body = entry.conduit ?: EioConduitBody()

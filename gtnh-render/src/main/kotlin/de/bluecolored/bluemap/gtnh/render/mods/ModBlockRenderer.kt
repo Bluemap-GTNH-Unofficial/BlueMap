@@ -45,7 +45,7 @@ import kotlin.math.max
  * or bounding box), so a block is never invisible.
  */
 abstract class ModBlockRenderer(
-    resourcePack: ResourcePack,
+    private val resourcePack: ResourcePack,
     private val textureGallery: TextureGallery,
     private val renderSettings: RenderSettings,
 ) : BlockRenderer {
@@ -63,6 +63,7 @@ abstract class ModBlockRenderer(
     final override fun render(block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color) {
         val modelStart = blockModel.start
         mapColorOpacity = 0f
+        delegated = false
         tintColor.set(0f, 0f, 0f, -1f, true)
         val assets = assets
         if (assets == null || !render(assets, block, variant, blockModel, color)) {
@@ -73,15 +74,38 @@ abstract class ModBlockRenderer(
             return
         }
         ModRenderStats.rendered(this)
-        if (color.a > 0) {
+        // a delegated renderer (renderState) has already finished the map colour
+        if (color.a > 0 && !delegated) {
             color.flatten().straight()
             color.a = mapColorOpacity
         }
         blockModel.initialize(modelStart)
     }
 
+    private var delegated = false
+
     /** Draws the block; false to fall back to the variant's model. */
     protected abstract fun render(assets: ModAssets, block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color): Boolean
+
+    private val delegates = HashMap<BlockRendererType, de.bluecolored.bluemap.core.map.hires.block.BlockRenderer>()
+
+    /**
+     * Draws [state]'s own blockstate variants at this block's position (a facade showing another block), with this
+     * block's light and neighbours. False if the pack has nothing for the state.
+     */
+    protected fun renderState(state: de.bluecolored.bluemap.core.world.BlockState, block: BlockNeighborhood, blockModel: TileModelView, color: Color): Boolean {
+        val resource = resourcePack.getBlockState(state) ?: return false
+        var drawn = false
+        resource.forEach(state, block.x, block.y, block.z) { v ->
+            val renderer = delegates.getOrPut(v.renderer) { v.renderer.create(resourcePack, textureGallery, renderSettings) }
+            val start = blockModel.start
+            renderer.render(block, v, blockModel, color)
+            blockModel.initialize(start)
+            drawn = true
+            delegated = true
+        }
+        return drawn
+    }
 
     private fun renderVariantModel(block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color) {
         if (quadModels?.get(variant.model) != null) {

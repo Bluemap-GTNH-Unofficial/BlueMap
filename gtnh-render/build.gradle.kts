@@ -5,8 +5,9 @@ plugins {
 dependencies {
     api ( project( ":core" ) )
 
-    // resource-key normalization vectors (contract C1) are checked against the legacy mapper's implementation
-    testImplementation ( project( ":legacy" ) )
+    // the legacy loader's block keys (ResourceKeys, VanillaFlattening) for blocks named in tile-entity NBT (facades);
+    // at runtime the legacy addon provides these classes (addon dependency "bluemap-gtnh-legacy")
+    implementation ( project( ":legacy" ) )
 }
 
 /**

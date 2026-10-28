@@ -40,6 +40,7 @@ import de.bluecolored.bluemap.gtnh.render.mods.MeshBuilder
 import de.bluecolored.bluemap.gtnh.render.mods.MeshQuad
 import de.bluecolored.bluemap.gtnh.render.mods.ModAssets
 import de.bluecolored.bluemap.gtnh.render.mods.ModBlockRenderer
+import de.bluecolored.bluemap.gtnh.render.mods.ModelFaces
 import de.bluecolored.bluemap.gtnh.render.mods.Transform
 import java.util.concurrent.ConcurrentHashMap
 
@@ -48,11 +49,13 @@ import java.util.concurrent.ConcurrentHashMap
  * by colour) with arms towards connected neighbours, and the common parts (terminals and monitors, buses,
  * interfaces, planes, P2P tunnels, ...) as AE2's own boxes with their AE2 textures. AE2 does not save connections,
  * so a side connects to a neighbouring bus with a compatible cable and no part in between, or to an AE2 network
- * block; a side with a part gets the cable stub to it. Facades and addon parts are not drawn (addon parts as a plate).
+ * block; a side with a part gets the cable stub to it. Facades are 2 px plates with the covered block's textures;
+ * addon parts are drawn as a plain plate.
  */
 class Ae2CableBusRenderer(resourcePack: ResourcePack, textureGallery: TextureGallery, renderSettings: RenderSettings) :
     ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
     private val meshes = ConcurrentHashMap<List<Any?>, Mesh>()
+    private val modelFaces = ModelFaces(resourcePack)
 
     override fun render(assets: ModAssets, block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color): Boolean {
         val te = block.blockEntity as? Ae2CableBusTileEntity ?: return false
@@ -65,9 +68,10 @@ class Ae2CableBusRenderer(resourcePack: ResourcePack, textureGallery: TextureGal
                 if (connects(block, cable, side)) connections = connections or (1 shl side)
             }
         }
-        if (cable == null && parts.all { it == null }) return false
-        val key = listOf(cable, connections, *parts)
-        val mesh = meshes[key] ?: build(assets, cable, connections, parts).also { meshes[key] = it }
+        val facades = Array(6) { side -> te.facade(side)?.let { (name, meta) -> ModelFaces.legacyState(name, meta) } }
+        if (cable == null && parts.all { it == null } && facades.all { it == null }) return false
+        val key = listOf(cable, connections, *parts, *facades)
+        val mesh = meshes[key] ?: (build(assets, cable, connections, parts) + facadeMesh(facades)).also { meshes[key] = it }
         emit(mesh, block, blockModel, color)
         return true
     }
@@ -82,6 +86,32 @@ class Ae2CableBusRenderer(resourcePack: ResourcePack, textureGallery: TextureGal
         }
         val id = neighbor.blockState.id
         return id.namespace == AE2 && id.value.removePrefix("tile.") in GRID_BLOCKS
+    }
+
+    /** Facades: a 2 px plate over the whole side showing the covered block's textures (`FacadePart`). */
+    private fun facadeMesh(facades: Array<de.bluecolored.bluemap.core.world.BlockState?>): Mesh {
+        val quads = ArrayList<MeshQuad>()
+        for (side in 0 until 6) {
+            val state = facades[side] ?: continue
+            val d = FORGE_DIRECTIONS[side].toVector()
+            fun range(axis: Int): Pair<Float, Float> = when (axis) {
+                1 -> 16f - FACADE_THICKNESS to 16f
+                -1 -> 0f to FACADE_THICKNESS
+                else -> 0f to 16f
+            }
+            val (x1, x2) = range(d.x)
+            val (y1, y2) = range(d.y)
+            val (z1, z2) = range(d.z)
+            val from = floatArrayOf(x1 / 16f, y1 / 16f, z1 / 16f)
+            val to = floatArrayOf(x2 / 16f, y2 / 16f, z2 / 16f)
+            for (face in Direction.entries) {
+                val look = modelFaces.face(state, face) ?: continue
+                val quad = Faces.face(face, from, to, MeshBuilder.autoUv(face, x1, y1, z1, x2, y2, z2, look.texture))
+                // biome-tinted blocks (grass, leaves) keep their tint
+                quads.add(if (look.tint) MeshQuad(quad.positions, quad.uvs, quad.texture, tint = true) else quad)
+            }
+        }
+        return Mesh(quads)
     }
 
     private fun build(assets: ModAssets, cable: Ae2Cable?, connections: Int, parts: Array<Ae2Part?>): Mesh {
@@ -210,6 +240,7 @@ class Ae2CableBusRenderer(resourcePack: ResourcePack, textureGallery: TextureGal
         const val AE2 = "appliedenergistics2"
         private const val SOUTH = 3
         private const val LAYER_LIFT_PIXELS = 1f / 32f
+        private const val FACADE_THICKNESS = 2f
         private val MISSING = Key.bluemap("block/missing")
 
         fun raw(name: String) = "appliedenergistics2:textures/blocks/$name.png"

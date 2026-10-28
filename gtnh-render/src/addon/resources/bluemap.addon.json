@@ -1,4 +1,5 @@
 {
   "id": "bluemap-gtnh-render",
-  "entrypoint": "de.bluecolored.bluemap.gtnh.render.GtnhRenderAddon"
+  "entrypoint": "de.bluecolored.bluemap.gtnh.render.GtnhRenderAddon",
+  "dependencies": ["bluemap-gtnh-legacy"]
 }
