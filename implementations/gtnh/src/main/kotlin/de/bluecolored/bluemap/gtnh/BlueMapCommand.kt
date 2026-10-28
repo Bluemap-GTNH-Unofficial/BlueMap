@@ -29,6 +29,7 @@ import de.bluecolored.bluecommands.LiteralCommand
 import de.bluecolored.bluecommands.ParseMatch
 import de.bluecolored.bluecommands.ParseResult
 import de.bluecolored.bluemap.common.commands.Commands
+import de.bluecolored.bluemap.common.commands.TextFormat.BASE_COLOR
 import de.bluecolored.bluemap.common.commands.TextFormat.NEGATIVE_COLOR
 import de.bluecolored.bluemap.common.plugin.Plugin
 import de.bluecolored.bluemap.common.serverinterface.CommandSource
@@ -40,17 +41,12 @@ import net.minecraft.command.CommandBase
 import net.minecraft.command.ICommandSender
 import net.minecraft.network.rcon.RConConsoleSource
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 
 /**
  * `/bluemap` as a 1.7.10 [CommandBase], driving BlueMap's bluecommands tree directly (1.7.10 has no brigadier).
  *
- * Execution mirrors upstream `CommandExecutor` (async on [BlueMap.THREAD_POOL], answering after at most 100 ms), except
- * for RCON: 1.7.10 replies to RCON with what was sent until the command returns, so there the command waits for the
- * result (up to [RCON_TIMEOUT_SECONDS]). With Hodgepodge's `fixRconThreading` (GTNH default) RCON commands run on the
- * server thread; while waiting there, [ServerThread] tasks of the command (e.g. saving the world) run in the wait loop.
+ * Execution mirrors upstream `CommandExecutor` (async on [BlueMap.THREAD_POOL]); how long the command waits for the
+ * result before returning is [CommandWait]'s policy. An RCON command still running after its wait says so in the reply.
  */
 class BlueMapCommand(
     private val server: GtnhServer,
@@ -75,7 +71,7 @@ class BlueMapCommand(
     ) {
         val source = GtnhCommandSource(server, sender)
         val result = commands.parse(source, input(args))
-        val waitMillis = if (sender is RConConsoleSource) TimeUnit.SECONDS.toMillis(RCON_TIMEOUT_SECONDS) else 100L
+        val rcon = sender is RConConsoleSource
 
         if (result.matches.isEmpty()) {
             if (!Commands.checkPluginLoaded(plugin, source)) return
@@ -84,13 +80,13 @@ class BlueMapCommand(
             return
         }
 
-        execute(result, result.matches.maxBy { it.priority }, waitMillis)
+        execute(result, result.matches.maxBy { it.priority }, rcon)
     }
 
     private fun execute(
         result: ParseResult<CommandSource, Any>,
         match: ParseMatch<CommandSource, Any>,
-        waitMillis: Long,
+        rcon: Boolean,
     ) {
         if (!Commands.checkExecutablePreconditions(plugin, match.context, match.executable)) return
 
@@ -106,21 +102,9 @@ class BlueMapCommand(
                     null
                 }
 
-        val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(waitMillis)
-        while (!execution.isDone) {
-            if (serverThread.isCurrent) serverThread.drain()
-            val remaining = deadline - System.nanoTime()
-            if (remaining <= 0) return
-            try {
-                execution.get(minOf(remaining, POLL_NANOS), TimeUnit.NANOSECONDS)
-            } catch (e: TimeoutException) {
-                // keep draining
-            } catch (e: ExecutionException) {
-                return // handled by exceptionally
-            } catch (e: InterruptedException) {
-                Thread.currentThread().interrupt()
-                return
-            }
+        val completed = CommandWait.await(execution, CommandWait.budgetMillis(rcon, serverThread.isCurrent), serverThread)
+        if (!completed && rcon) {
+            match.context.sendMessage(text("Still running, see /$name for the status and the server log for the result.").color(BASE_COLOR))
         }
     }
 
@@ -146,9 +130,4 @@ class BlueMapCommand(
     }
 
     private fun input(args: Array<String>): String = if (args.isEmpty()) name else name + " " + args.joinToString(" ")
-
-    private companion object {
-        const val RCON_TIMEOUT_SECONDS = 60L
-        val POLL_NANOS = TimeUnit.MILLISECONDS.toNanos(5)
-    }
 }

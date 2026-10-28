@@ -37,7 +37,8 @@ excludes the library packages from the Forge class transformers before any of th
   dimensions (`WorldProvider` sky, ceiling, light) and all modded biomes (`BiomeGenBase` temperature, rainfall, water
   colour). Dimensions loaded later update their file for the next `/bluemap reload`.
 - `/bluemap` drives BlueMap's command tree directly; every subcommand needs op (permission level 1). Over RCON the reply
-  contains the command output (the command waits up to 60 s; with Hodgepodge's `fixRconThreading` it waits on the server
-  thread and runs BlueMap's server-thread work, such as saving, meanwhile).
+  contains the command output: the command waits up to 60 s on the RCON thread, but at most 1 s when Hodgepodge's
+  `fixRconThreading` (GTNH default) runs it on the server thread, running BlueMap's server-thread work (such as saving)
+  meanwhile. Commands still running after that (e.g. `reload`) reply "Still running ..." and finish in the background.
 - `/bluemap update` saves the dimension on the server thread and waits for the chunk IO thread instead of flushing it
   from a second thread (Hodgepodge PR #1018). Live updates come from BlueMap's region-file watcher after saves.
