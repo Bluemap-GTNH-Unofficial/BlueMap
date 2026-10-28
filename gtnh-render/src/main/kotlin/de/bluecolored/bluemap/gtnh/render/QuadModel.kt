@@ -35,7 +35,7 @@ import kotlin.math.abs
 /**
  * A block model made of arbitrary quads, captured from the 1.7.10 client by the GTNH exporter.
  *
- * File format (`assets/<ns>/models/gtnh_quads/<...>.json`; see `tools/gtnh-exporter/README.md`):
+ * File format (`assets/<ns>/models/gtnh_quads/<...>.json`; see the gtnh-exporter repository's README):
  * ```json
  * {
  *   "textures": { "t0": "<ns>:block/<path>" },
@@ -106,11 +106,15 @@ class QuadModel(
                 }
 
                 val textureRef = q.get("texture").asString
-                val texture = if (textureRef.startsWith("#")) {
-                    requireNotNull(textureNames[textureRef.substring(1)]) { "unknown texture variable $textureRef" }
-                } else {
-                    textureNames.getOrPut(textureRef) { textures.add(ResourcePath(textureRef)); textures.size - 1 }
-                }
+                val texture =
+                    if (textureRef.startsWith("#")) {
+                        requireNotNull(textureNames[textureRef.substring(1)]) { "unknown texture variable $textureRef" }
+                    } else {
+                        textureNames.getOrPut(textureRef) {
+                            textures.add(ResourcePath(textureRef))
+                            textures.size - 1
+                        }
+                    }
 
                 val rgb = q.get("color")?.asString?.let(::parseRgb) ?: 0xFFFFFF
                 val cullface = q.get("cullface")?.asString?.let { Direction.fromString(it) }

@@ -34,7 +34,15 @@ object Side {
     const val EAST = 5
 
     /** Unit vector of a side: x, y, z. */
-    private val OFFSETS = arrayOf(intArrayOf(0, -1, 0), intArrayOf(0, 1, 0), intArrayOf(0, 0, -1), intArrayOf(0, 0, 1), intArrayOf(-1, 0, 0), intArrayOf(1, 0, 0))
+    private val OFFSETS =
+        arrayOf(
+            intArrayOf(0, -1, 0),
+            intArrayOf(0, 1, 0),
+            intArrayOf(0, 0, -1),
+            intArrayOf(0, 0, 1),
+            intArrayOf(-1, 0, 0),
+            intArrayOf(1, 0, 0),
+        )
 
     fun dx(side: Int) = OFFSETS[side][0]
 
@@ -46,7 +54,14 @@ object Side {
 }
 
 /** An axis-aligned box in block units. */
-data class Box(val x0: Float, val y0: Float, val z0: Float, val x1: Float, val y1: Float, val z1: Float) {
+data class Box(
+    val x0: Float,
+    val y0: Float,
+    val z0: Float,
+    val x1: Float,
+    val y1: Float,
+    val z1: Float,
+) {
     /** Whether the box's face on [side] lies on the block boundary (so a full neighbour can hide it). */
     fun touchesBoundary(side: Int): Boolean =
         when (side) {
@@ -161,7 +176,15 @@ object GtUv {
     }
 
     /** Sprite (u, v) of position (x, y, z) on [side] under transform [op], written to [out] at [offset]. */
-    fun uv(side: Int, x: Float, y: Float, z: Float, op: Int, out: FloatArray, offset: Int) {
+    fun uv(
+        side: Int,
+        x: Float,
+        y: Float,
+        z: Float,
+        op: Int,
+        out: FloatArray,
+        offset: Int,
+    ) {
         var u: Float
         var v: Float
         when (side) {
@@ -206,7 +229,10 @@ object GtUv {
  * One face GT draws for a pipe: [side] of [box], showing the pipe's texture for [side]
  * (`MetaPipeEntity.renderInWorld`).
  */
-data class PipeFace(val side: Int, val box: Box)
+data class PipeFace(
+    val side: Int,
+    val box: Box,
+)
 
 object GtPipeGeometry {
     /**
@@ -214,7 +240,10 @@ object GtPipeGeometry {
      * connected side an arm to the block boundary with its four side faces and an end face; the core shows its face
      * only towards unconnected sides. Thickness >= 1 is a full cube.
      */
-    fun faces(thickness: Float, connections: Int): List<PipeFace> {
+    fun faces(
+        thickness: Float,
+        connections: Int,
+    ): List<PipeFace> {
         if (thickness >= 1f) return (0 until 6).map { PipeFace(it, Box.FULL) }
         val min = (1f - thickness) / 2f
         val max = 1f - min
@@ -247,7 +276,10 @@ object GtPipeGeometry {
      * Whether GT draws the "connected" (end) texture on [side]: a single connection counts as a straight pipe through
      * the block, and a pipe without connections shows its end texture everywhere (`BaseMetaPipeEntity.getTextureUncovered`).
      */
-    fun showsConnectedTexture(connections: Int, side: Int): Boolean {
+    fun showsConnectedTexture(
+        connections: Int,
+        side: Int,
+    ): Boolean {
         val textureConnections =
             when (connections) {
                 1 shl Side.WEST, 1 shl Side.EAST -> (1 shl Side.WEST) or (1 shl Side.EAST)

@@ -38,10 +38,16 @@ object EntityModel {
      */
     fun box(
         texture: Key,
-        u: Float, v: Float,
-        x: Float, y: Float, z: Float,
-        dx: Float, dy: Float, dz: Float,
-        texW: Float = 64f, texH: Float = 64f,
+        u: Float,
+        v: Float,
+        x: Float,
+        y: Float,
+        z: Float,
+        dx: Float,
+        dy: Float,
+        dz: Float,
+        texW: Float = 64f,
+        texH: Float = 64f,
     ): List<MeshQuad> {
         val x2 = x + dx
         val y2 = y + dy
@@ -54,7 +60,17 @@ object EntityModel {
         val v4 = floatArrayOf(x2, y, z2)
         val v5 = floatArrayOf(x2, y2, z2)
         val v6 = floatArrayOf(x, y2, z2)
-        fun quad(a: FloatArray, b: FloatArray, c: FloatArray, d: FloatArray, u1: Float, v1: Float, u2: Float, v2: Float): MeshQuad {
+
+        fun quad(
+            a: FloatArray,
+            b: FloatArray,
+            c: FloatArray,
+            d: FloatArray,
+            u1: Float,
+            v1: Float,
+            u2: Float,
+            v2: Float,
+        ): MeshQuad {
             val p = FloatArray(12)
             a.copyInto(p, 0)
             b.copyInto(p, 3)

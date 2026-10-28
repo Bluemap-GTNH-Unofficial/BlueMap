@@ -99,25 +99,35 @@ class EioConduitBundleTileEntity : MCABlockEntity() {
  * conduit scale 0.6, `Offsets` per conduit type and axis when the bundle holds several types), with the conduit's
  * own core/body textures. A bundle with a facade is drawn as the facade's block. Connection plates are not drawn.
  */
-class EnderIoConduitRenderer(resourcePack: ResourcePack, textureGallery: TextureGallery, renderSettings: RenderSettings) :
-    ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
+class EnderIoConduitRenderer(
+    resourcePack: ResourcePack,
+    textureGallery: TextureGallery,
+    renderSettings: RenderSettings,
+) : ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
     private val meshes = ConcurrentHashMap<List<Any>, Mesh>()
 
-    override fun render(assets: ModAssets, block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color): Boolean {
+    override fun render(
+        assets: ModAssets,
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ): Boolean {
         val te = block.blockEntity as? EioConduitBundleTileEntity ?: return false
         // a facade hides the conduits: the bundle looks like the facade's block
         te.facade?.let { (name, meta) ->
             val state = ModelFaces.legacyState(name, meta)
             if (state != null && renderState(state, block, blockModel, color)) return true
         }
-        val conduits = te.conduits.mapNotNull { entry ->
-            val type = Kind.of(entry.conduitType) ?: return@mapNotNull null
-            val body = entry.conduit ?: EioConduitBody()
-            var mask = 0
-            for (d in body.connections) if (d in 0..5) mask = mask or (1 shl d)
-            for (d in body.externalConnections) if (d in 0..5) mask = mask or (1 shl d)
-            Triple(type, body.subtype, mask)
-        }
+        val conduits =
+            te.conduits.mapNotNull { entry ->
+                val type = Kind.of(entry.conduitType) ?: return@mapNotNull null
+                val body = entry.conduit ?: EioConduitBody()
+                var mask = 0
+                for (d in body.connections) if (d in 0..5) mask = mask or (1 shl d)
+                for (d in body.externalConnections) if (d in 0..5) mask = mask or (1 shl d)
+                Triple(type, body.subtype, mask)
+            }
         if (conduits.isEmpty()) return false
         val key: List<Any> = conduits
         val mesh = meshes[key] ?: build(assets, conduits).also { meshes[key] = it }
@@ -125,7 +135,10 @@ class EnderIoConduitRenderer(resourcePack: ResourcePack, textureGallery: Texture
         return true
     }
 
-    private fun build(assets: ModAssets, conduits: List<Triple<Kind, Int, Int>>): Mesh {
+    private fun build(
+        assets: ModAssets,
+        conduits: List<Triple<Kind, Int, Int>>,
+    ): Mesh {
         val builder = MeshBuilder()
         val single = conduits.size == 1
         for ((kind, subtype, mask) in conduits) {
@@ -153,7 +166,10 @@ class EnderIoConduitRenderer(resourcePack: ResourcePack, textureGallery: Texture
     }
 
     /** Conduit types: texture stems and `Offsets` (offset unit vectors scaled by the conduit width) per axis. */
-    enum class Kind(private val stems: List<String>, offsets: List<Triple<Int, Int, Int>>) {
+    enum class Kind(
+        private val stems: List<String>,
+        offsets: List<Triple<Int, Int, Int>>,
+    ) {
         ITEM(listOf("itemConduit"), listOf(EAST, SOUTH, EAST, EAST)),
         LIQUID(listOf("liquidConduit"), listOf(WEST, NORTH, WEST, WEST)),
         LIQUID_ADVANCED(listOf("liquidConduitAdvanced", "liquidConduit"), listOf(WEST, NORTH, WEST, WEST)),
@@ -168,7 +184,11 @@ class EnderIoConduitRenderer(resourcePack: ResourcePack, textureGallery: Texture
         /** Offsets in pixels for axis NONE, X, Y, Z. */
         val offsets: List<Triple<Float, Float, Float>> = offsets.map { (x, y, z) -> Triple(x * WIDTH, y * WIDTH, z * WIDTH) }
 
-        fun texture(assets: ModAssets, subtype: Int, core: Boolean): Key? {
+        fun texture(
+            assets: ModAssets,
+            subtype: Int,
+            core: Boolean,
+        ): Key? {
             val suffix = if (this == POWER) POWER_SUFFIXES.getOrElse(subtype) { "" } else ""
             for (stem in stems) {
                 val name = if (core) "${stem}Core$suffix" else "$stem$suffix"
@@ -187,18 +207,19 @@ class EnderIoConduitRenderer(resourcePack: ResourcePack, textureGallery: Texture
 
         companion object {
             /** By the conduit's class (`conduitType`, e.g. `crazypants.enderio.conduit.item.ItemConduit`). */
-            fun of(conduitType: String): Kind? = when (conduitType.substringAfterLast('.')) {
-                "ItemConduit" -> ITEM
-                "LiquidConduit" -> LIQUID
-                "AdvancedLiquidConduit" -> LIQUID_ADVANCED
-                "EnderLiquidConduit" -> LIQUID_ENDER
-                "PowerConduit" -> POWER
-                "InsulatedRedstoneConduit", "RedstoneConduit", "RedstoneSwitch" -> REDSTONE
-                "MEConduit" -> ME
-                "GasConduit" -> GAS
-                "OCConduit" -> OC
-                else -> null
-            }
+            fun of(conduitType: String): Kind? =
+                when (conduitType.substringAfterLast('.')) {
+                    "ItemConduit" -> ITEM
+                    "LiquidConduit" -> LIQUID
+                    "AdvancedLiquidConduit" -> LIQUID_ADVANCED
+                    "EnderLiquidConduit" -> LIQUID_ENDER
+                    "PowerConduit" -> POWER
+                    "InsulatedRedstoneConduit", "RedstoneConduit", "RedstoneSwitch" -> REDSTONE
+                    "MEConduit" -> ME
+                    "GasConduit" -> GAS
+                    "OCConduit" -> OC
+                    else -> null
+                }
         }
     }
 

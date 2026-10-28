@@ -93,13 +93,20 @@ object GtLaserBeacon : AddonTesr<GtLaserTileEntity>(
 
     override val drawsBlockModel: Boolean get() = true
 
-    override fun mesh(assets: ModAssets, entity: GtLaserTileEntity, block: BlockNeighborhood): Mesh? {
+    override fun mesh(
+        assets: ModAssets,
+        entity: GtLaserTileEntity,
+        block: BlockNeighborhood,
+    ): Mesh? {
         if (!entity.shouldRender) return Mesh.EMPTY
         val white = assets.texture(AddonTesrs.WHITE) ?: return null
         return beam(white, entity)
     }
 
-    fun beam(texture: Key, laser: GtLaserTileEntity): Mesh {
+    fun beam(
+        texture: Key,
+        laser: GtLaserTileEntity,
+    ): Mesh {
         val y1 = min(0.5, laser.range).toFloat() * 16
         val y2 = max(0.5, laser.range).toFloat() * 16
         val face = FaceTexture(texture, rgb = rgb(laser.red, laser.green, laser.blue), glow = true)

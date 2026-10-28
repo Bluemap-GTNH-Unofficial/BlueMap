@@ -63,18 +63,25 @@ class MeshQuad(
         return MeshQuad(p, uvs, texture, rgb, glow, isTriangle, tint)
     }
 
-    fun withTexture(texture: Key, rgb: Int = this.rgb): MeshQuad = MeshQuad(positions, uvs, texture, rgb, glow, isTriangle, tint)
+    fun withTexture(
+        texture: Key,
+        rgb: Int = this.rgb,
+    ): MeshQuad = MeshQuad(positions, uvs, texture, rgb, glow, isTriangle, tint)
 
     companion object {
         const val WHITE = 0xFFFFFF
         private const val EPS = 1e-4f
 
-        private fun boundaryFace(p: FloatArray, facing: Direction): Direction? {
-            val axis = when (facing) {
-                Direction.WEST, Direction.EAST -> 0
-                Direction.DOWN, Direction.UP -> 1
-                Direction.NORTH, Direction.SOUTH -> 2
-            }
+        private fun boundaryFace(
+            p: FloatArray,
+            facing: Direction,
+        ): Direction? {
+            val axis =
+                when (facing) {
+                    Direction.WEST, Direction.EAST -> 0
+                    Direction.DOWN, Direction.UP -> 1
+                    Direction.NORTH, Direction.SOUTH -> 2
+                }
             val target = if (facing.toVector().let { it.x + it.y + it.z } > 0) 1f else 0f
             for (i in 0 until 4) if (abs(p[i * 3 + axis] - target) > EPS) return null
             return facing
@@ -82,7 +89,9 @@ class MeshQuad(
     }
 }
 
-class Mesh(val quads: List<MeshQuad>) {
+class Mesh(
+    val quads: List<MeshQuad>,
+) {
     fun transformed(m: Transform): Mesh = Mesh(quads.map { it.transformed(m) })
 
     operator fun plus(other: Mesh): Mesh = Mesh(quads + other.quads)
@@ -121,8 +130,15 @@ data class FaceTexture(
 
     companion object {
         /** The sub-rectangle of a sprite in pixels (0..16 by default). */
-        fun pixels(texture: Key, u1: Float, v1: Float, u2: Float, v2: Float, size: Float = 16f, rotation: Int = 0) =
-            FaceTexture(texture, u1 / size, v1 / size, u2 / size, v2 / size, rotation)
+        fun pixels(
+            texture: Key,
+            u1: Float,
+            v1: Float,
+            u2: Float,
+            v2: Float,
+            size: Float = 16f,
+            rotation: Int = 0,
+        ) = FaceTexture(texture, u1 / size, v1 / size, u2 / size, v2 / size, rotation)
     }
 }
 
@@ -135,43 +151,63 @@ object Faces {
     val ALL: List<Direction> = Direction.entries
 
     /** Screen-right unit vector of [face] (1.7 and 1.13 agree on every face). */
-    fun right(face: Direction): IntArray = when (face) {
-        Direction.NORTH -> intArrayOf(-1, 0, 0)
-        Direction.SOUTH -> intArrayOf(1, 0, 0)
-        Direction.WEST -> intArrayOf(0, 0, 1)
-        Direction.EAST -> intArrayOf(0, 0, -1)
-        Direction.UP, Direction.DOWN -> intArrayOf(1, 0, 0)
-    }
+    fun right(face: Direction): IntArray =
+        when (face) {
+            Direction.NORTH -> intArrayOf(-1, 0, 0)
+            Direction.SOUTH -> intArrayOf(1, 0, 0)
+            Direction.WEST -> intArrayOf(0, 0, 1)
+            Direction.EAST -> intArrayOf(0, 0, -1)
+            Direction.UP, Direction.DOWN -> intArrayOf(1, 0, 0)
+        }
 
     /**
      * Screen-down unit vector of [face]. 1.13 models put north at the top of the down face (texture top towards
      * +z... seen from below), 1.7 `RenderBlocks` maps the down face like the up face (v grows with +z).
      */
-    fun down(face: Direction, legacyBottom: Boolean = false): IntArray = when (face) {
-        Direction.UP -> intArrayOf(0, 0, 1)
-        Direction.DOWN -> if (legacyBottom) intArrayOf(0, 0, 1) else intArrayOf(0, 0, -1)
-        else -> intArrayOf(0, -1, 0)
-    }
+    fun down(
+        face: Direction,
+        legacyBottom: Boolean = false,
+    ): IntArray =
+        when (face) {
+            Direction.UP -> intArrayOf(0, 0, 1)
+            Direction.DOWN -> if (legacyBottom) intArrayOf(0, 0, 1) else intArrayOf(0, 0, -1)
+            else -> intArrayOf(0, -1, 0)
+        }
 
     /**
      * Positions of the region (sx1..sx2 × sy1..sy2, screen units 0..1 from the face's top-left) of [face] of the
      * box, in the order top-left, bottom-left, bottom-right, top-right (counter-clockwise from outside, except for
      * a legacy bottom face, which is mirrored and therefore wound the other way round; see [region]).
      */
-    private fun corner(face: Direction, from: FloatArray, to: FloatArray, sx: Float, sy: Float, legacyBottom: Boolean, out: FloatArray, at: Int) {
+    private fun corner(
+        face: Direction,
+        from: FloatArray,
+        to: FloatArray,
+        sx: Float,
+        sy: Float,
+        legacyBottom: Boolean,
+        out: FloatArray,
+        at: Int,
+    ) {
         val r = right(face)
         val d = down(face, legacyBottom)
         val n = face.toVector()
         for (axis in 0 until 3) {
             val lo = from[axis]
             val hi = to[axis]
-            val nAxis = when (axis) { 0 -> n.x; 1 -> n.y; else -> n.z }
-            out[at + axis] = when {
-                nAxis > 0 -> hi
-                nAxis < 0 -> lo
-                r[axis] != 0 -> if (r[axis] > 0) lo + (hi - lo) * sx else hi - (hi - lo) * sx
-                else -> if (d[axis] > 0) lo + (hi - lo) * sy else hi - (hi - lo) * sy
-            }
+            val nAxis =
+                when (axis) {
+                    0 -> n.x
+                    1 -> n.y
+                    else -> n.z
+                }
+            out[at + axis] =
+                when {
+                    nAxis > 0 -> hi
+                    nAxis < 0 -> lo
+                    r[axis] != 0 -> if (r[axis] > 0) lo + (hi - lo) * sx else hi - (hi - lo) * sx
+                    else -> if (d[axis] > 0) lo + (hi - lo) * sy else hi - (hi - lo) * sy
+                }
         }
     }
 
@@ -201,7 +237,10 @@ object Faces {
         return MeshQuad(p, uv, texture.texture, texture.rgb, texture.glow)
     }
 
-    private fun reverse(a: FloatArray, stride: Int) {
+    private fun reverse(
+        a: FloatArray,
+        stride: Int,
+    ) {
         // corner order 0,1,2,3 -> 0,3,2,1
         for (k in 0 until stride) {
             val t = a[stride + k]
@@ -211,8 +250,13 @@ object Faces {
     }
 
     /** A whole box face. */
-    fun face(face: Direction, from: FloatArray, to: FloatArray, texture: FaceTexture, legacyBottom: Boolean = false): MeshQuad =
-        region(face, from, to, 0f, 0f, 1f, 1f, texture, legacyBottom)
+    fun face(
+        face: Direction,
+        from: FloatArray,
+        to: FloatArray,
+        texture: FaceTexture,
+        legacyBottom: Boolean = false,
+    ): MeshQuad = region(face, from, to, 0f, 0f, 1f, 1f, texture, legacyBottom)
 }
 
 /** Builds meshes from boxes; coordinates in pixels (0..16). */
@@ -228,42 +272,75 @@ class MeshBuilder {
      * the part of its sprite that lies under it in block space (like vanilla models without `uv`).
      */
     fun box(
-        x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float,
+        x1: Float,
+        y1: Float,
+        z1: Float,
+        x2: Float,
+        y2: Float,
+        z2: Float,
         faces: (Direction) -> FaceTexture?,
-    ): MeshBuilder = apply {
-        val from = floatArrayOf(x1 / 16f, y1 / 16f, z1 / 16f)
-        val to = floatArrayOf(x2 / 16f, y2 / 16f, z2 / 16f)
-        for (face in Faces.ALL) {
-            val tex = faces(face) ?: continue
-            quads.add(Faces.face(face, from, to, tex))
+    ): MeshBuilder =
+        apply {
+            val from = floatArrayOf(x1 / 16f, y1 / 16f, z1 / 16f)
+            val to = floatArrayOf(x2 / 16f, y2 / 16f, z2 / 16f)
+            for (face in Faces.ALL) {
+                val tex = faces(face) ?: continue
+                quads.add(Faces.face(face, from, to, tex))
+            }
         }
-    }
 
     /** A box whose faces all show the block-space region of [texture] (auto UV, like a vanilla model element). */
-    fun box(x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, texture: Key, rgb: Int = MeshQuad.WHITE, skip: Set<Direction> = emptySet()): MeshBuilder =
-        box(x1, y1, z1, x2, y2, z2) { face -> if (face in skip) null else autoUv(face, x1, y1, z1, x2, y2, z2, texture, rgb) }
+    fun box(
+        x1: Float,
+        y1: Float,
+        z1: Float,
+        x2: Float,
+        y2: Float,
+        z2: Float,
+        texture: Key,
+        rgb: Int = MeshQuad.WHITE,
+        skip: Set<Direction> = emptySet(),
+    ): MeshBuilder = box(x1, y1, z1, x2, y2, z2) { face -> if (face in skip) null else autoUv(face, x1, y1, z1, x2, y2, z2, texture, rgb) }
 
     fun build(): Mesh = Mesh(ArrayList(quads))
 
     companion object {
         /** The vanilla automatic UV of an element face (pixels → sprite units). */
-        fun autoUv(face: Direction, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, texture: Key, rgb: Int = MeshQuad.WHITE): FaceTexture {
-            val (u1, v1, u2, v2) = when (face) {
-                Direction.DOWN -> floatArrayOf(x1, 16 - z2, x2, 16 - z1)
-                Direction.UP -> floatArrayOf(x1, z1, x2, z2)
-                Direction.NORTH -> floatArrayOf(16 - x2, 16 - y2, 16 - x1, 16 - y1)
-                Direction.SOUTH -> floatArrayOf(x1, 16 - y2, x2, 16 - y1)
-                Direction.WEST -> floatArrayOf(z1, 16 - y2, z2, 16 - y1)
-                Direction.EAST -> floatArrayOf(16 - z2, 16 - y2, 16 - z1, 16 - y1)
-            }.let { arr -> arr.map { it / 16f } }
+        fun autoUv(
+            face: Direction,
+            x1: Float,
+            y1: Float,
+            z1: Float,
+            x2: Float,
+            y2: Float,
+            z2: Float,
+            texture: Key,
+            rgb: Int = MeshQuad.WHITE,
+        ): FaceTexture {
+            val (u1, v1, u2, v2) =
+                when (face) {
+                    Direction.DOWN -> floatArrayOf(x1, 16 - z2, x2, 16 - z1)
+                    Direction.UP -> floatArrayOf(x1, z1, x2, z2)
+                    Direction.NORTH -> floatArrayOf(16 - x2, 16 - y2, 16 - x1, 16 - y1)
+                    Direction.SOUTH -> floatArrayOf(x1, 16 - y2, x2, 16 - y1)
+                    Direction.WEST -> floatArrayOf(z1, 16 - y2, z2, 16 - y1)
+                    Direction.EAST -> floatArrayOf(16 - z2, 16 - y2, 16 - z1, 16 - y1)
+                }.let { arr -> arr.map { it / 16f } }
             return FaceTexture(texture, u1, v1, u2, v2, rgb = rgb)
         }
     }
 }
 
 /** An affine transform of block-space points (row-major 3×4). */
-class Transform private constructor(private val m: FloatArray) {
-    fun apply(src: FloatArray, srcAt: Int, dst: FloatArray, dstAt: Int) {
+class Transform private constructor(
+    private val m: FloatArray,
+) {
+    fun apply(
+        src: FloatArray,
+        srcAt: Int,
+        dst: FloatArray,
+        dstAt: Int,
+    ) {
         val x = src[srcAt]
         val y = src[srcAt + 1]
         val z = src[srcAt + 2]
@@ -290,12 +367,25 @@ class Transform private constructor(private val m: FloatArray) {
     companion object {
         val IDENTITY = Transform(floatArrayOf(1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f))
 
-        fun translate(x: Float, y: Float, z: Float) = Transform(floatArrayOf(1f, 0f, 0f, x, 0f, 1f, 0f, y, 0f, 0f, 1f, z))
+        fun translate(
+            x: Float,
+            y: Float,
+            z: Float,
+        ) = Transform(floatArrayOf(1f, 0f, 0f, x, 0f, 1f, 0f, y, 0f, 0f, 1f, z))
 
-        fun scale(x: Float, y: Float, z: Float) = Transform(floatArrayOf(x, 0f, 0f, 0f, 0f, y, 0f, 0f, 0f, 0f, z, 0f))
+        fun scale(
+            x: Float,
+            y: Float,
+            z: Float,
+        ) = Transform(floatArrayOf(x, 0f, 0f, 0f, 0f, y, 0f, 0f, 0f, 0f, z, 0f))
 
         /** Rotation by [degrees] about the axis (x, y, z) through the origin, like `glRotatef`. */
-        fun rotate(degrees: Float, x: Float, y: Float, z: Float): Transform {
+        fun rotate(
+            degrees: Float,
+            x: Float,
+            y: Float,
+            z: Float,
+        ): Transform {
             val len = kotlin.math.sqrt(x * x + y * y + z * z)
             val ux = x / len
             val uy = y / len
@@ -306,9 +396,18 @@ class Transform private constructor(private val m: FloatArray) {
             val t = 1 - c
             return Transform(
                 floatArrayOf(
-                    t * ux * ux + c, t * ux * uy - s * uz, t * ux * uz + s * uy, 0f,
-                    t * ux * uy + s * uz, t * uy * uy + c, t * uy * uz - s * ux, 0f,
-                    t * ux * uz - s * uy, t * uy * uz + s * ux, t * uz * uz + c, 0f,
+                    t * ux * ux + c,
+                    t * ux * uy - s * uz,
+                    t * ux * uz + s * uy,
+                    0f,
+                    t * ux * uy + s * uz,
+                    t * uy * uy + c,
+                    t * uy * uz - s * ux,
+                    0f,
+                    t * ux * uz - s * uy,
+                    t * uy * uz + s * ux,
+                    t * uz * uz + c,
+                    0f,
                 ),
             )
         }
@@ -320,11 +419,12 @@ class Transform private constructor(private val m: FloatArray) {
         /** The product of [transforms] in GL call order (the last one is applied first). */
         fun gl(vararg transforms: Transform): Transform = transforms.fold(IDENTITY) { acc, t -> acc * t }
 
-        private fun snap(v: Float): Float = when {
-            abs(v) < 1e-6f -> 0f
-            abs(v - 1) < 1e-6f -> 1f
-            abs(v + 1) < 1e-6f -> -1f
-            else -> v
-        }
+        private fun snap(v: Float): Float =
+            when {
+                abs(v) < 1e-6f -> 0f
+                abs(v - 1) < 1e-6f -> 1f
+                abs(v + 1) < 1e-6f -> -1f
+                else -> v
+            }
     }
 }

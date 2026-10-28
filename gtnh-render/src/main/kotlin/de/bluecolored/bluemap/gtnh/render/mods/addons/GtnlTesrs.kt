@@ -149,24 +149,48 @@ object GtnlTesrs {
         const val BEAM_RADIUS = 0.12f
 
         /** `AEColor.mediumVariant` by ordinal; 16 = Transparent (fluix). */
-        val COLORS = intArrayOf(
-            0xDBDBDB, 0xFAAE44, 0xB82AB8, 0x82ACE7, 0xF8FF4A, 0xBBFF51, 0xF8B5D7, 0xA0A0A0,
-            0xCDCDCD, 0x51AAC6, 0xA453CE, 0x514AFF, 0xB7967F, 0x60E32E, 0xFF003C, 0x565656, 0x895CA8,
-        )
+        val COLORS =
+            intArrayOf(
+                0xDBDBDB,
+                0xFAAE44,
+                0xB82AB8,
+                0x82ACE7,
+                0xF8FF4A,
+                0xBBFF51,
+                0xF8B5D7,
+                0xA0A0A0,
+                0xCDCDCD,
+                0x51AAC6,
+                0xA453CE,
+                0x514AFF,
+                0xB7967F,
+                0x60E32E,
+                0xFF003C,
+                0x565656,
+                0x895CA8,
+            )
 
         override val rawTextures = setOf(TEXTURE, BEAM_TEXTURE)
 
         /** The beam to a paired former [distance] blocks ahead, in AE colour ordinal [color]. */
-        data class Link(val distance: Int, val color: Int)
+        data class Link(
+            val distance: Int,
+            val color: Int,
+        )
 
-        override fun mesh(assets: ModAssets, entity: BeamFormerTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: BeamFormerTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val forward = entity.forward ?: return null
             val up = entity.up ?: return null
             val json = assets.json(MODEL) ?: return null
-            val model = JsonMeshes.get(json, forward to up) {
-                val orientation = orientation(forward, up) ?: return@get null
-                JsonModelMesh.mesh(json) { assets.texture(JsonModelMesh.rawTexture(it)) }?.transformed(orientation)
-            } ?: return null
+            val model =
+                JsonMeshes.get(json, forward to up) {
+                    val orientation = orientation(forward, up) ?: return@get null
+                    JsonModelMesh.mesh(json) { assets.texture(JsonModelMesh.rawTexture(it)) }?.transformed(orientation)
+                } ?: return null
             if (!drawsBeam(forward) || entity.hideBeam) return model
             val link = link(entity, block) ?: return model
             val beamTexture = assets.texture(BEAM_TEXTURE) ?: return model
@@ -180,17 +204,21 @@ object GtnlTesrs {
          * About the block centre: model +X -> forward × up, +Y -> up, +Z -> back. Null for an impossible pair
          * (same axis).
          */
-        fun orientation(forward: Direction, up: Direction): Transform? {
+        fun orientation(
+            forward: Direction,
+            up: Direction,
+        ): Transform? {
             if (forward.axis == up.axis) return null
             // first stand the model's +Y up, then spin it about up until its north side faces forward
-            val tilt = when (up) {
-                Direction.UP -> Transform.IDENTITY
-                Direction.DOWN -> Transform.rotate(180f, 1f, 0f, 0f)
-                Direction.NORTH -> Transform.rotate(-90f, 1f, 0f, 0f)
-                Direction.SOUTH -> Transform.rotate(90f, 1f, 0f, 0f)
-                Direction.EAST -> Transform.rotate(-90f, 0f, 0f, 1f)
-                Direction.WEST -> Transform.rotate(90f, 0f, 0f, 1f)
-            }
+            val tilt =
+                when (up) {
+                    Direction.UP -> Transform.IDENTITY
+                    Direction.DOWN -> Transform.rotate(180f, 1f, 0f, 0f)
+                    Direction.NORTH -> Transform.rotate(-90f, 1f, 0f, 0f)
+                    Direction.SOUTH -> Transform.rotate(90f, 1f, 0f, 0f)
+                    Direction.EAST -> Transform.rotate(-90f, 0f, 0f, 1f)
+                    Direction.WEST -> Transform.rotate(90f, 0f, 0f, 1f)
+                }
             val u = up.toVector()
             val f = forward.toVector()
             val north = floatArrayOf(0f, 0f, -1f)
@@ -206,7 +234,10 @@ object GtnlTesrs {
         }
 
         /** The paired former ahead and the beam's colour, or null when there is none or the pair is hidden. */
-        fun link(entity: BeamFormerTileEntity, block: BlockNeighborhood): Link? {
+        fun link(
+            entity: BeamFormerTileEntity,
+            block: BlockNeighborhood,
+        ): Link? {
             val forward = entity.forward ?: return null
             val f = forward.toVector()
             val own = cableColor(block.getNeighborBlock(-f.x, -f.y, -f.z))
@@ -230,39 +261,50 @@ object GtnlTesrs {
         fun cableColor(block: BlockAccess): Int = (block.blockEntity as? Ae2CableBusTileEntity)?.cable?.color ?: Ae2Cable.FLUIX
 
         /** `connectionColor`: null if the colours do not match, else the source's unless it is fluix. */
-        fun beamColor(source: Int, target: Int): Int? = when {
-            source == Ae2Cable.FLUIX -> target
-            target == Ae2Cable.FLUIX || target == source -> source
-            else -> null
-        }
+        fun beamColor(
+            source: Int,
+            target: Int,
+        ): Int? =
+            when {
+                source == Ae2Cable.FLUIX -> target
+                target == Ae2Cable.FLUIX || target == source -> source
+                else -> null
+            }
 
         /**
          * The inner beam to a former [distance] blocks along [forward]: `glTranslated(.5, .5, .5)`, yaw about Y,
          * pitch about X (local +Y -> forward), `glTranslated(-.5, start, -.5)`, then four sides around (.5, .5).
          */
-        fun beam(texture: Key, forward: Direction, distance: Int, rgb: Int): Mesh {
+        fun beam(
+            texture: Key,
+            forward: Direction,
+            distance: Int,
+            rgb: Int,
+        ): Mesh {
             val length = distance - 2 * OFFSET
             if (length <= 0) return Mesh.EMPTY
             val v = forward.toVector()
             val pitch = Math.toDegrees(atan2(sqrt((v.x * v.x + v.z * v.z).toDouble()), v.y.toDouble())).toFloat()
             val yaw = (90 - Math.toDegrees(atan2(v.z.toDouble(), v.x.toDouble()))).toFloat()
-            val place = Transform.gl(
-                CENTER,
-                Transform.rotate(yaw, 0f, 1f, 0f),
-                Transform.rotate(pitch, 1f, 0f, 0f),
-                Transform.translate(-0.5f, OFFSET, -0.5f),
-            )
+            val place =
+                Transform.gl(
+                    CENTER,
+                    Transform.rotate(yaw, 0f, 1f, 0f),
+                    Transform.rotate(pitch, 1f, 0f, 0f),
+                    Transform.translate(-0.5f, OFFSET, -0.5f),
+                )
             val h = BEAM_RADIUS * sqrt(0.5f)
             val lo = 0.5f - h
             val hi = 0.5f + h
             // the TESR's corner order at angle π/4
             val corners = arrayOf(floatArrayOf(lo, hi), floatArrayOf(hi, hi), floatArrayOf(hi, lo), floatArrayOf(lo, lo))
-            val quads = (0 until 4).map { i ->
-                val a = corners[i]
-                val b = corners[(i + 1) % 4]
-                val p = floatArrayOf(a[0], 0f, a[1], a[0], length, a[1], b[0], length, b[1], b[0], 0f, b[1])
-                MeshQuad(p, floatArrayOf(0f, 0f, 0f, 1f, 1f, 1f, 1f, 0f), texture, rgb).transformed(place)
-            }
+            val quads =
+                (0 until 4).map { i ->
+                    val a = corners[i]
+                    val b = corners[(i + 1) % 4]
+                    val p = floatArrayOf(a[0], 0f, a[1], a[0], length, a[1], b[0], length, b[1], b[0], 0f, b[1])
+                    MeshQuad(p, floatArrayOf(0f, 0f, 0f, 1f, 1f, 1f, 1f, 0f), texture, rgb).transformed(place)
+                }
             return Mesh(quads).glowing().doubleSided()
         }
     }
@@ -295,7 +337,11 @@ object GtnlTesrs {
         override val drawsBlockModel: Boolean get() = true
 
         /** One liquid layer, heights inside the TESR's frame (add [LIFT] for block space). */
-        data class Layer(val aspect: String, val bottom: Double, val top: Double)
+        data class Layer(
+            val aspect: String,
+            val bottom: Double,
+            val top: Double,
+        )
 
         /** The layers bottom to top. */
         fun layers(entity: MultiEssentiaJarTileEntity): List<Layer> {
@@ -321,7 +367,11 @@ object GtnlTesrs {
             }
         }
 
-        override fun mesh(assets: ModAssets, entity: MultiEssentiaJarTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: MultiEssentiaJarTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val layers = layers(entity)
             if (layers.isEmpty()) return Mesh.EMPTY
             val texture = assets.texture(TEXTURE) ?: return null
@@ -346,12 +396,13 @@ object GtnlTesrs {
         const val TEXTURE = "$DOMAIN:textures/blocks/water_candle.png"
 
         /** Candle boxes `(x, y, z, w, h, d)` in the bone, texture offset (0, 8). */
-        val CANDLES = listOf(
-            floatArrayOf(-8f, 0f, 8f, 2f, 3f, 2f),
-            floatArrayOf(-11f, 0f, 8f, 2f, 5f, 2f),
-            floatArrayOf(-7f, 0f, 5f, 2f, 5f, 2f),
-            floatArrayOf(-10f, 0f, 5f, 2f, 6f, 2f),
-        )
+        val CANDLES =
+            listOf(
+                floatArrayOf(-8f, 0f, 8f, 2f, 3f, 2f),
+                floatArrayOf(-11f, 0f, 8f, 2f, 5f, 2f),
+                floatArrayOf(-7f, 0f, 5f, 2f, 5f, 2f),
+                floatArrayOf(-10f, 0f, 5f, 2f, 6f, 2f),
+            )
 
         /** Flame rotation points in the bone; each holds a 1×1×0 px plane turned ±0.7854 rad about Y. */
         val FLAMES = listOf(floatArrayOf(-9f, 6f, 6f), floatArrayOf(-6f, 5f, 6f), floatArrayOf(-10f, 5f, 9f), floatArrayOf(-7f, 3f, 9f))
@@ -362,7 +413,11 @@ object GtnlTesrs {
 
         private val meshes = ConcurrentHashMap<Key, Mesh>()
 
-        override fun mesh(assets: ModAssets, entity: PlainTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: PlainTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val texture = assets.texture(TEXTURE) ?: return null
             return meshes.computeIfAbsent(texture, ::build)
         }
@@ -398,17 +453,32 @@ object GtnlTesrs {
         const val MODEL = "$DOMAIN:models/player_doll.obj"
         const val TEXTURE = "$DOMAIN:models/skin.png"
 
-        val PARTS = listOf(
-            "Body", "Body_Layer", "Head", "Head_Layer", "Left_Leg", "Left_Leg_Layer", "Right_Leg", "Right_Leg_Layer",
-            "Left_Arm_Alex", "Left_Arm_Alex_Layer", "Right_Arm_Alex", "Right_Arm_Alex_Layer",
-        )
+        val PARTS =
+            listOf(
+                "Body",
+                "Body_Layer",
+                "Head",
+                "Head_Layer",
+                "Left_Leg",
+                "Left_Leg_Layer",
+                "Right_Leg",
+                "Right_Leg_Layer",
+                "Left_Arm_Alex",
+                "Left_Arm_Alex_Layer",
+                "Right_Arm_Alex",
+                "Right_Arm_Alex_Layer",
+            )
 
         override val rawTextures = setOf(TEXTURE)
 
         fun placement(meta: Int): Transform =
             Transform.gl(Transform.translate(0.5f, 0f, 0.5f), Transform.rotate(turn(meta), 0f, 1f, 0f), Transform.rotate(180f, 0f, 1f, 0f))
 
-        override fun mesh(assets: ModAssets, entity: PlainTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: PlainTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val obj = assets.obj(MODEL) ?: return null
             val texture = assets.texture(TEXTURE) ?: return null
             val meta = meta(block)
@@ -427,7 +497,11 @@ object GtnlTesrs {
 
         override val rawTextures = setOf(TEXTURE)
 
-        override fun mesh(assets: ModAssets, entity: PlainTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: PlainTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val json = assets.json(MODEL) ?: return null
             // rotateTowards(-facing, up): model +Z to the back, i.e. the nose (north) to the facing
             val degrees = turn(meta(block))
@@ -448,27 +522,52 @@ object GtnlTesrs {
         const val OVERLAY = "$DOMAIN:textures/blocks/ender_elevator_overlay.png"
 
         /** `BlockEnderElevator.COLOR_TABLE`, by meta. */
-        val COLORS = intArrayOf(
-            0xFFFFFF, 0xD87F33, 0xB24CA5, 0x6699D8, 0xE5E533, 0x7FCC19, 0xF27FA5, 0x4C4C4C,
-            0x999999, 0x4C7F99, 0x7F3FB2, 0x334CB2, 0x664C33, 0x667F33, 0x993333, 0x191919,
-        )
+        val COLORS =
+            intArrayOf(
+                0xFFFFFF,
+                0xD87F33,
+                0xB24CA5,
+                0x6699D8,
+                0xE5E533,
+                0x7FCC19,
+                0xF27FA5,
+                0x4C4C4C,
+                0x999999,
+                0x4C7F99,
+                0x7F3FB2,
+                0x334CB2,
+                0x664C33,
+                0x667F33,
+                0x993333,
+                0x191919,
+            )
 
         override val rawTextures = setOf(TEXTURE, OVERLAY)
 
         /** The block's height by registry name: `ender_elevator_slab` 0.5, `_carpet` 1/16, else full. */
-        fun height(blockName: String): Float = when {
-            blockName.endsWith("_slab") -> 0.5f
-            blockName.endsWith("_carpet") -> 0.0625f
-            else -> 1f
-        }
+        fun height(blockName: String): Float =
+            when {
+                blockName.endsWith("_slab") -> 0.5f
+                blockName.endsWith("_carpet") -> 0.0625f
+                else -> 1f
+            }
 
         fun color(meta: Int): Int = COLORS[Math.floorMod(meta, COLORS.size)]
 
-        private data class MeshKey(val texture: Key, val overlay: Key, val height: Float, val rgb: Int)
+        private data class MeshKey(
+            val texture: Key,
+            val overlay: Key,
+            val height: Float,
+            val rgb: Int,
+        )
 
         private val meshes = ConcurrentHashMap<MeshKey, Mesh>()
 
-        override fun mesh(assets: ModAssets, entity: PlainTileEntity, block: BlockNeighborhood): Mesh? {
+        override fun mesh(
+            assets: ModAssets,
+            entity: PlainTileEntity,
+            block: BlockNeighborhood,
+        ): Mesh? {
             val texture = assets.texture(TEXTURE) ?: return null
             val overlay = assets.texture(OVERLAY) ?: return null
             val key = MeshKey(texture, overlay, height(block.blockState.id.value), color(meta(block)))
@@ -476,7 +575,14 @@ object GtnlTesrs {
                 val to = floatArrayOf(1f, k.height, 1f)
                 val box = renderBlocksBox(floatArrayOf(0f, 0f, 0f), to, k.texture, k.rgb, Faces.ALL)
                 // renderFaceYPos(elevator, 0, 0.001, 0, overlayIcon)
-                val top = renderBlocksBox(floatArrayOf(0f, k.height + 0.001f, 0f), floatArrayOf(1f, k.height + 0.001f, 1f), k.overlay, MeshQuad.WHITE, listOf(Direction.UP))
+                val top =
+                    renderBlocksBox(
+                        floatArrayOf(0f, k.height + 0.001f, 0f),
+                        floatArrayOf(1f, k.height + 0.001f, 1f),
+                        k.overlay,
+                        MeshQuad.WHITE,
+                        listOf(Direction.UP),
+                    )
                 Mesh(box + top)
             }
         }
@@ -486,15 +592,23 @@ object GtnlTesrs {
      * The [faces] of a box drawn with 1.7 `RenderBlocks.renderFace*`: each face shows the part of the sprite its
      * bounds cover (x/z on top and bottom, x or z by 1 - y on the sides; the bottom in 1.7's orientation).
      */
-    internal fun renderBlocksBox(from: FloatArray, to: FloatArray, texture: Key, rgb: Int, faces: Collection<Direction>, glow: Boolean = false): List<MeshQuad> =
+    internal fun renderBlocksBox(
+        from: FloatArray,
+        to: FloatArray,
+        texture: Key,
+        rgb: Int,
+        faces: Collection<Direction>,
+        glow: Boolean = false,
+    ): List<MeshQuad> =
         faces.map { face ->
             val (x1, y1, z1) = from
             val (x2, y2, z2) = to
-            val tex = when (face) {
-                Direction.DOWN, Direction.UP -> FaceTexture(texture, x1, z1, x2, z2, rgb = rgb, glow = glow)
-                Direction.NORTH, Direction.SOUTH -> FaceTexture(texture, x1, 1 - y2, x2, 1 - y1, rgb = rgb, glow = glow)
-                Direction.WEST, Direction.EAST -> FaceTexture(texture, z1, 1 - y2, z2, 1 - y1, rgb = rgb, glow = glow)
-            }
+            val tex =
+                when (face) {
+                    Direction.DOWN, Direction.UP -> FaceTexture(texture, x1, z1, x2, z2, rgb = rgb, glow = glow)
+                    Direction.NORTH, Direction.SOUTH -> FaceTexture(texture, x1, 1 - y2, x2, 1 - y1, rgb = rgb, glow = glow)
+                    Direction.WEST, Direction.EAST -> FaceTexture(texture, z1, 1 - y2, z2, 1 - y1, rgb = rgb, glow = glow)
+                }
             Faces.face(face, from, to, tex, legacyBottom = true)
         }
 

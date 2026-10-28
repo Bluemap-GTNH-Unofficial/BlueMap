@@ -44,33 +44,52 @@ import de.bluecolored.bluemap.gtnh.render.mods.ModBlockRenderer
  * position variation, random tiles; see [ChiselType]) from the exporter's `chisel.json`. Everything else (and
  * blocks without data) keeps the variant's model, which shows the base tile.
  */
-class ChiselCtmRenderer(resourcePack: ResourcePack, textureGallery: TextureGallery, renderSettings: RenderSettings) :
-    ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
+class ChiselCtmRenderer(
+    resourcePack: ResourcePack,
+    textureGallery: TextureGallery,
+    renderSettings: RenderSettings,
+) : ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
     private val indices = IntArray(4)
     private val cells = IntArray(6)
     private val rotations = IntArray(6)
 
-    override fun render(assets: ModAssets, block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color): Boolean {
+    override fun render(
+        assets: ModAssets,
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ): Boolean {
         val chisel = assets.chisel ?: return false
         val state = block.blockState
         val data = chisel[state.id, meta(block)] ?: return false
         val neighbours = Neighbours { dx, dy, dz -> block.getNeighborBlock(dx, dy, dz).blockState == state }
         when (data.type) {
-            ChiselType.CTMX -> for (face in Faces.ALL) {
-                ChiselCtm.ctmIndices(face, neighbours, indices)
-                for (q in 0 until 4) emit(ctmQuad(data, face, q, indices[q]), block, blockModel, color)
+            ChiselType.CTMX -> {
+                for (face in Faces.ALL) {
+                    ChiselCtm.ctmIndices(face, neighbours, indices)
+                    for (q in 0 until 4) emit(ctmQuad(data, face, q, indices[q]), block, blockModel, color)
+                }
             }
-            ChiselType.V9, ChiselType.V4 -> for (face in Faces.ALL) {
-                val cell = ChiselCtm.variationCell(data.type.sheetSize, block.x, block.y, block.z, face)
-                emit(cellQuad(data, face, cell, 0), block, blockModel, color)
+
+            ChiselType.V9, ChiselType.V4 -> {
+                for (face in Faces.ALL) {
+                    val cell = ChiselCtm.variationCell(data.type.sheetSize, block.x, block.y, block.z, face)
+                    emit(cellQuad(data, face, cell, 0), block, blockModel, color)
+                }
             }
+
             ChiselType.R16, ChiselType.R9, ChiselType.R4 -> {
                 val cell = ChiselCtm.randomCell(data.type.sheetSize, block.x, block.y, block.z)
                 for (face in Faces.ALL) emit(cellQuad(data, face, cell, 0), block, blockModel, color)
             }
-            ChiselType.CTMH -> for (face in Faces.ALL) {
-                emit(cellQuad(data, face, ChiselCtm.horizontalCell(face, neighbours), 0), block, blockModel, color)
+
+            ChiselType.CTMH -> {
+                for (face in Faces.ALL) {
+                    emit(cellQuad(data, face, ChiselCtm.horizontalCell(face, neighbours), 0), block, blockModel, color)
+                }
             }
+
             ChiselType.CTMV -> {
                 ChiselCtm.column(neighbours, cells, rotations)
                 for (face in Faces.ALL) emit(cellQuad(data, face, cells[face.ordinal], rotations[face.ordinal]), block, blockModel, color)
@@ -80,7 +99,12 @@ class ChiselCtmRenderer(resourcePack: ResourcePack, textureGallery: TextureGalle
     }
 
     /** CTMX quadrant [q] of [face] showing submap [index] (0..15 sheet cell, 16..19 base quarter). */
-    private fun ctmQuad(variant: ChiselVariant, face: Direction, q: Int, index: Int): MeshQuad {
+    private fun ctmQuad(
+        variant: ChiselVariant,
+        face: Direction,
+        q: Int,
+        index: Int,
+    ): MeshQuad {
         val slot = (face.ordinal * 4 + q) * 20 + index
         variant.quadCache[slot]?.let { return it as MeshQuad }
         val texture: Key
@@ -102,7 +126,12 @@ class ChiselCtmRenderer(resourcePack: ResourcePack, textureGallery: TextureGalle
     }
 
     /** A whole face showing [cell] of the variant's sheet (-1: the top texture), drawn like vanilla `RenderBlocks`. */
-    private fun cellQuad(variant: ChiselVariant, face: Direction, cell: Int, rotation: Int): MeshQuad {
+    private fun cellQuad(
+        variant: ChiselVariant,
+        face: Direction,
+        cell: Int,
+        rotation: Int,
+    ): MeshQuad {
         val slot = (face.ordinal * 4 + rotation) * 20 + (cell + 1)
         variant.quadCache[slot]?.let { return it as MeshQuad }
         val texture = if (cell < 0) FaceTexture(variant.top!!) else cellTexture(variant.sheet, variant.type.sheetSize, cell, rotation)
@@ -111,7 +140,12 @@ class ChiselCtmRenderer(resourcePack: ResourcePack, textureGallery: TextureGalle
         return quad
     }
 
-    private fun cellTexture(texture: Key, cellsPerSide: Int, cell: Int, rotation: Int): FaceTexture {
+    private fun cellTexture(
+        texture: Key,
+        cellsPerSide: Int,
+        cell: Int,
+        rotation: Int,
+    ): FaceTexture {
         val col = cell % cellsPerSide
         val row = cell / cellsPerSide
         val s = 1f / cellsPerSide

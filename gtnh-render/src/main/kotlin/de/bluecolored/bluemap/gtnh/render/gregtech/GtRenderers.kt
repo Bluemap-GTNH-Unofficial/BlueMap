@@ -59,7 +59,12 @@ abstract class GtBlockRenderer(
     private var mapColorOpacity = 0f
     private val uvs = FloatArray(8)
 
-    final override fun render(block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color) {
+    final override fun render(
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ) {
         val data = data
         val modelStart = blockModel.start
         mapColorOpacity = 0f
@@ -76,9 +81,19 @@ abstract class GtBlockRenderer(
     }
 
     /** Draws the block from the GT dump; false to fall back to the variant's model. */
-    protected abstract fun render(data: GtData, block: BlockNeighborhood, blockModel: TileModelView, color: Color): Boolean
+    protected abstract fun render(
+        data: GtData,
+        block: BlockNeighborhood,
+        blockModel: TileModelView,
+        color: Color,
+    ): Boolean
 
-    private fun renderVariantModel(block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color) {
+    private fun renderVariantModel(
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ) {
         if (quadModels?.get(variant.model) != null) {
             quadRenderer.render(block, variant, blockModel, color)
         } else {
@@ -87,7 +102,14 @@ abstract class GtBlockRenderer(
     }
 
     /** The six sides of a full cube. */
-    protected fun renderCube(data: GtData, block: BlockNeighborhood, blockModel: TileModelView, color: Color, sides: GtSides, uv: UvContext = UvContext.NONE) {
+    protected fun renderCube(
+        data: GtData,
+        block: BlockNeighborhood,
+        blockModel: TileModelView,
+        color: Color,
+        sides: GtSides,
+        uv: UvContext = UvContext.NONE,
+    ) {
         for (side in 0 until 6) renderFace(data, block, blockModel, color, side, Box.FULL, sides.getOrNull(side) ?: continue, uv)
     }
 
@@ -165,15 +187,27 @@ abstract class GtBlockRenderer(
         val c = corners
         tileModel.setPositions(
             face1,
-            c[0] + ox, c[1] + oy, c[2] + oz,
-            c[3] + ox, c[4] + oy, c[5] + oz,
-            c[6] + ox, c[7] + oy, c[8] + oz,
+            c[0] + ox,
+            c[1] + oy,
+            c[2] + oz,
+            c[3] + ox,
+            c[4] + oy,
+            c[5] + oz,
+            c[6] + ox,
+            c[7] + oy,
+            c[8] + oz,
         )
         tileModel.setPositions(
             face2,
-            c[0] + ox, c[1] + oy, c[2] + oz,
-            c[6] + ox, c[7] + oy, c[8] + oz,
-            c[9] + ox, c[10] + oy, c[11] + oz,
+            c[0] + ox,
+            c[1] + oy,
+            c[2] + oz,
+            c[6] + ox,
+            c[7] + oy,
+            c[8] + oz,
+            c[9] + ox,
+            c[10] + oy,
+            c[11] + oz,
         )
         val t = uvs
         tileModel.setUvs(face1, t[0], t[1], t[2], t[3], t[4], t[5])
@@ -209,7 +243,11 @@ abstract class GtBlockRenderer(
     }
 
     /** ExtendedFacing of the tile entity, for `extFacing` layers. */
-    data class UvContext(val alignment: Boolean, val rotation: Int, val flip: Int) {
+    data class UvContext(
+        val alignment: Boolean,
+        val rotation: Int,
+        val flip: Int,
+    ) {
         companion object {
             val NONE = UvContext(false, 0, 0)
         }
@@ -226,9 +264,17 @@ abstract class GtBlockRenderer(
  * machines, hatches, controllers as layered cubes; pipes, cables and MTE frames by thickness and connections.
  * An unknown or missing MTE becomes a ULV machine casing.
  */
-class GtMachineRenderer(resourcePack: ResourcePack, textureGallery: TextureGallery, renderSettings: RenderSettings) :
-    GtBlockRenderer(resourcePack, textureGallery, renderSettings) {
-    override fun render(data: GtData, block: BlockNeighborhood, blockModel: TileModelView, color: Color): Boolean {
+class GtMachineRenderer(
+    resourcePack: ResourcePack,
+    textureGallery: TextureGallery,
+    renderSettings: RenderSettings,
+) : GtBlockRenderer(resourcePack, textureGallery, renderSettings) {
+    override fun render(
+        data: GtData,
+        block: BlockNeighborhood,
+        blockModel: TileModelView,
+        color: Color,
+    ): Boolean {
         val te = block.blockEntity as? GtTileEntity
         val mte = te?.let { data.mtes[it.mteId] }
         if (te != null && mte != null) {
@@ -237,7 +283,15 @@ class GtMachineRenderer(resourcePack: ResourcePack, textureGallery: TextureGalle
                 val connections = te.connections and 0x3F
                 val colour = te.colourIndex
                 for (face in GtPipeGeometry.faces(pipe.thickness, connections)) {
-                    renderFace(data, block, blockModel, color, face.side, face.box, GtFaces.pipe(data, pipe, connections, face.side, colour))
+                    renderFace(
+                        data,
+                        block,
+                        blockModel,
+                        color,
+                        face.side,
+                        face.box,
+                        GtFaces.pipe(data, pipe, connections, face.side, colour),
+                    )
                 }
                 return true
             }
@@ -253,9 +307,17 @@ class GtMachineRenderer(resourcePack: ResourcePack, textureGallery: TextureGalle
 }
 
 /** `gtnh:gt_ore`: `gt.blockores2..7` by meta: stone background plus the material's tinted ore overlay. */
-class GtOreRenderer(resourcePack: ResourcePack, textureGallery: TextureGallery, renderSettings: RenderSettings) :
-    GtBlockRenderer(resourcePack, textureGallery, renderSettings) {
-    override fun render(data: GtData, block: BlockNeighborhood, blockModel: TileModelView, color: Color): Boolean {
+class GtOreRenderer(
+    resourcePack: ResourcePack,
+    textureGallery: TextureGallery,
+    renderSettings: RenderSettings,
+) : GtBlockRenderer(resourcePack, textureGallery, renderSettings) {
+    override fun render(
+        data: GtData,
+        block: BlockNeighborhood,
+        blockModel: TileModelView,
+        color: Color,
+    ): Boolean {
         val state = block.blockState
         val meta = state.properties["meta"]?.toIntOrNull() ?: return false
         val face = GtFaces.ore(data, state.id, meta) ?: return false
@@ -265,9 +327,17 @@ class GtOreRenderer(resourcePack: ResourcePack, textureGallery: TextureGallery, 
 }
 
 /** `gtnh:gt_frame`: `gt.blockframes`, the material's (`meta & 0xFFF`) tinted frame icon on all sides. */
-class GtFrameRenderer(resourcePack: ResourcePack, textureGallery: TextureGallery, renderSettings: RenderSettings) :
-    GtBlockRenderer(resourcePack, textureGallery, renderSettings) {
-    override fun render(data: GtData, block: BlockNeighborhood, blockModel: TileModelView, color: Color): Boolean {
+class GtFrameRenderer(
+    resourcePack: ResourcePack,
+    textureGallery: TextureGallery,
+    renderSettings: RenderSettings,
+) : GtBlockRenderer(resourcePack, textureGallery, renderSettings) {
+    override fun render(
+        data: GtData,
+        block: BlockNeighborhood,
+        blockModel: TileModelView,
+        color: Color,
+    ): Boolean {
         val meta = block.blockState.properties["meta"]?.toIntOrNull() ?: return false
         val face = GtFaces.frame(data, meta) ?: return false
         renderCube(data, block, blockModel, color, List(6) { face })

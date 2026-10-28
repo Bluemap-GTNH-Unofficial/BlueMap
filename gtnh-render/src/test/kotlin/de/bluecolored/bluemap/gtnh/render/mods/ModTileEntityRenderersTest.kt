@@ -60,7 +60,10 @@ class ModTileEntityRenderersTest {
         fun register() = GtnhRender.register()
 
         /** Serializes a tile entity compound and reads it back like a 1.7 chunk's `TileEntities` entry. */
-        fun te(id: String, fields: NBTWriter.() -> Unit): BlockEntity? {
+        fun te(
+            id: String,
+            fields: NBTWriter.() -> Unit,
+        ): BlockEntity? {
             val out = ByteArrayOutputStream()
             NBTWriter(out).use { w ->
                 w.beginCompound()
@@ -74,7 +77,11 @@ class ModTileEntityRenderersTest {
             return LegacyBlockEntities.blueNbt().read(ByteArrayInputStream(out.toByteArray()), BlockEntity::class.java)
         }
 
-        fun NBTWriter.stack(name: String, id: Int, damage: Int) {
+        fun NBTWriter.stack(
+            name: String,
+            id: Int,
+            damage: Int,
+        ) {
             name(name).beginCompound()
             name("id").value(id.toShort())
             name("Count").value(1.toByte())
@@ -99,7 +106,10 @@ class ModTileEntityRenderersTest {
         kit.png("assets/ironchest/textures/model/goldchest.png", 0xFFD700, 64, 64)
         kit.assets("ironchest:textures/model/goldchest.png" to "assets/ironchest/textures/model/goldchest.png")
         kit.cubeModel("assets/~iron~chest/models/block/bbox.json", "minecraft:block/stone")
-        kit.file("assets/~iron~chest/blockstates/~block~iron~chest.json", """{"variants": {"meta=1": {"renderer": "gtnh:iron_chest", "model": "~iron~chest:block/bbox"}}}""")
+        kit.file(
+            "assets/~iron~chest/blockstates/~block~iron~chest.json",
+            """{"variants": {"meta=1": {"renderer": "gtnh:iron_chest", "model": "~iron~chest:block/bbox"}}}""",
+        )
         val tris = kit.render(Cell(state("~iron~chest:~block~iron~chest", 1), chest)).triangles
         // lid, latch and body: 18 faces
         assertEquals(36, tris.size)
@@ -117,12 +127,23 @@ class ModTileEntityRenderersTest {
 
     @Test
     fun `bibliocraft furniture fields parse from their tile entities`() {
-        val table = te("TableTile") {
-            name("leg1").value(1.toByte()); name("leg2").value(0.toByte()); name("monoleg").value(0.toByte())
-            name("top1").value(1.toByte()); name("top2").value(0.toByte())
-        } as BiblioTileEntity
-        assertEquals(listOf(1, 0, 0, 0, 1, 0, 1, 1, 0), table.stateKey(de.bluecolored.bluemap.gtnh.render.mods.bibliocraft.BiblioCraftRenderer.Furniture.TABLE))
-        val bookcase = te("BookcaseTile") { name("bookcaseAngle").value(2); name("shifted").value(1.toByte()) } as BiblioTileEntity
+        val table =
+            te("TableTile") {
+                name("leg1").value(1.toByte())
+                name("leg2").value(0.toByte())
+                name("monoleg").value(0.toByte())
+                name("top1").value(1.toByte())
+                name("top2").value(0.toByte())
+            } as BiblioTileEntity
+        assertEquals(
+            listOf(1, 0, 0, 0, 1, 0, 1, 1, 0),
+            table.stateKey(de.bluecolored.bluemap.gtnh.render.mods.bibliocraft.BiblioCraftRenderer.Furniture.TABLE),
+        )
+        val bookcase =
+            te("BookcaseTile") {
+                name("bookcaseAngle").value(2)
+                name("shifted").value(1.toByte())
+            } as BiblioTileEntity
         assertEquals(2, bookcase.bookcaseAngle)
         assertEquals(1, bookcase.shifted)
     }
@@ -138,7 +159,10 @@ class ModTileEntityRenderersTest {
         kit.assets("bibliocraft:models/OBJBookcase.obj" to "assets/bibliocraft/models/~o~b~j~bookcase.obj")
         kit.png("assets/minecraft/textures/block/spruce_planks.png", 0x806030)
         kit.cubeModel("assets/~biblio~craft/models/block/bbox.json", "minecraft:block/spruce_planks")
-        kit.file("assets/~biblio~craft/blockstates/~bibliotheca.json", """{"variants": {"meta=1": {"renderer": "gtnh:bibliocraft", "model": "~biblio~craft:block/bbox"}}}""")
+        kit.file(
+            "assets/~biblio~craft/blockstates/~bibliotheca.json",
+            """{"variants": {"meta=1": {"renderer": "gtnh:bibliocraft", "model": "~biblio~craft:block/bbox"}}}""",
+        )
         val spruce = kit.id(Key.minecraft("block/spruce_planks"))
         for (angle in 0..3) {
             val bookcase = te("BookcaseTile") { name("bookcaseAngle").value(angle) }
@@ -153,13 +177,14 @@ class ModTileEntityRenderersTest {
 
     @Test
     fun `AE2 cable bus parts by side, cable type and colour from the ItemMultiPart damage`() {
-        val bus = te("BlockCableBus") {
-            stack("def:6", 4632, 36)
-            stack("def:2", 4632, 380)
-            stack("def:4", 9999, 7)
-            name("extra:6").beginCompound()
-            endCompound()
-        } as Ae2CableBusTileEntity
+        val bus =
+            te("BlockCableBus") {
+                stack("def:6", 4632, 36)
+                stack("def:2", 4632, 380)
+                stack("def:4", 9999, 7)
+                name("extra:6").beginCompound()
+                endCompound()
+            } as Ae2CableBusTileEntity
         assertEquals(Ae2Cable(Ae2Cable.Type.COVERED, Ae2Cable.FLUIX), bus.cable)
         assertEquals(Ae2Part.Kind.DISPLAY, bus.part(2)!!.kind)
         assertEquals(Ae2Part.Kind.UNKNOWN, bus.part(4)!!.kind, "another item id is an addon's part")
@@ -178,10 +203,14 @@ class ModTileEntityRenderersTest {
         kit.png("assets/appliedenergistics2/textures/block/~item~part.~cable~glass.png", 0x8060A0)
         kit.assets(
             "appliedenergistics2:textures/blocks/MECable_Red.png" to "assets/appliedenergistics2/textures/block/~m~e~cable_~red.png",
-            "appliedenergistics2:textures/blocks/ItemPart.CableGlass.png" to "assets/appliedenergistics2/textures/block/~item~part.~cable~glass.png",
+            "appliedenergistics2:textures/blocks/ItemPart.CableGlass.png" to
+                "assets/appliedenergistics2/textures/block/~item~part.~cable~glass.png",
         )
         kit.cubeModel("assets/appliedenergistics2/models/block/bbox.json", "minecraft:block/stone")
-        kit.file("assets/appliedenergistics2/blockstates/tile.~block~cable~bus.json", """{"variants": {"": {"renderer": "gtnh:ae2_cable_bus", "model": "appliedenergistics2:block/bbox"}}}""")
+        kit.file(
+            "assets/appliedenergistics2/blockstates/tile.~block~cable~bus.json",
+            """{"variants": {"": {"renderer": "gtnh:ae2_cable_bus", "model": "appliedenergistics2:block/bbox"}}}""",
+        )
         val busState = state("appliedenergistics2:tile.~block~cable~bus", 0)
         val red = te("BlockCableBus") { stack("def:6", 1, 14) }
         val fluix = te("BlockCableBus") { stack("def:6", 1, 16) }
@@ -195,24 +224,31 @@ class ModTileEntityRenderersTest {
         // a differently coloured cable does not connect
         assertEquals(10f / 16, extent(kit.render(Cell(busState, red), Triple(1, 0, 0) to Cell(busState, blue)).triangles), 1e-4f)
         // ... nor does a compatible one with a part on the facing side (west = ForgeDirection 4)
-        val blocked = te("BlockCableBus") { stack("def:6", 1, 16); stack("def:4", 1, 380) }
+        val blocked =
+            te("BlockCableBus") {
+                stack("def:6", 1, 16)
+                stack("def:4", 1, 380)
+            }
         assertEquals(10f / 16, extent(kit.render(Cell(busState, red), Triple(1, 0, 0) to Cell(busState, blocked)).triangles), 1e-4f)
-        assertTrue(kit.render(Cell(busState, red)).triangles.all { it.texture == kit.id(Key("appliedenergistics2", "block/~m~e~cable_~red")) })
+        assertTrue(
+            kit.render(Cell(busState, red)).triangles.all { it.texture == kit.id(Key("appliedenergistics2", "block/~m~e~cable_~red")) },
+        )
     }
 
     @Test
     fun `EnderIO conduit list with connections, one arm per connection`() {
-        val bundle = te("blockConduitBundleTileEntity") {
-            name("conduits").beginList(1, TagType.COMPOUND)
-            beginCompound()
-            name("conduitType").value("crazypants.enderio.conduit.item.ItemConduit")
-            name("conduit").beginCompound()
-            name("connections").value(intArrayOf(5))
-            name("externalConnections").value(intArrayOf(1))
-            endCompound()
-            endCompound()
-            endList()
-        } as EioConduitBundleTileEntity
+        val bundle =
+            te("blockConduitBundleTileEntity") {
+                name("conduits").beginList(1, TagType.COMPOUND)
+                beginCompound()
+                name("conduitType").value("crazypants.enderio.conduit.item.ItemConduit")
+                name("conduit").beginCompound()
+                name("connections").value(intArrayOf(5))
+                name("externalConnections").value(intArrayOf(1))
+                endCompound()
+                endCompound()
+                endList()
+            } as EioConduitBundleTileEntity
         assertEquals(1, bundle.conduits.size)
         assertArrayEquals(intArrayOf(5), bundle.conduits[0].conduit!!.connections)
 
@@ -224,7 +260,10 @@ class ModTileEntityRenderersTest {
             "enderio:textures/blocks/itemConduitCore.png" to "assets/enderio/textures/block/item~conduit~core.png",
         )
         kit.cubeModel("assets/~ender~i~o/models/block/bbox.json", "minecraft:block/stone")
-        kit.file("assets/~ender~i~o/blockstates/block~conduit~bundle.json", """{"variants": {"": {"renderer": "gtnh:enderio_conduit", "model": "~ender~i~o:block/bbox"}}}""")
+        kit.file(
+            "assets/~ender~i~o/blockstates/block~conduit~bundle.json",
+            """{"variants": {"": {"renderer": "gtnh:enderio_conduit", "model": "~ender~i~o:block/bbox"}}}""",
+        )
         val tris = kit.render(Cell(state("~ender~i~o:block~conduit~bundle", 0), bundle)).triangles
         // core + east arm + up arm = 3 boxes
         assertEquals(36, tris.size)
@@ -264,7 +303,10 @@ class ModTileEntityRenderersTest {
               {"texture": "#t0", "cullface": "south", "vertices": [[0,16,16,0,0],[0,0,16,0,16],[16,0,16,16,16],[16,16,16,16,0]]},
               {"texture": "#t1", "cullface": "up", "vertices": [[0,16,16,0,16],[16,16,16,16,16],[16,16,0,16,0],[0,16,0,0,0]]}]}""",
         )
-        kit.file("assets/gregtech/blockstates/gt.blockcasings.json", """{"variants": {"meta=0": {"renderer": "gtnh:ctm", "model": "gregtech:gtnh_quads/casing/0"}}}""")
+        kit.file(
+            "assets/gregtech/blockstates/gt.blockcasings.json",
+            """{"variants": {"meta=0": {"renderer": "gtnh:ctm", "model": "gregtech:gtnh_quads/casing/0"}}}""",
+        )
         val casing = state("gregtech:gt.blockcasings", 0)
         val alone = kit.render(Cell(casing)).triangles
         // south face as 4 quadrants (8 triangles) + the plain top quad (2)
@@ -282,29 +324,42 @@ class ModTileEntityRenderersTest {
 
     @Test
     fun `facade blocks named in NBT map like the legacy loader maps placed blocks`() {
-        assertEquals(de.bluecolored.bluemap.core.world.BlockState(Key.minecraft("stone")), ModelFaces.legacyState("minecraft:stone", 0))
         assertEquals(
-            de.bluecolored.bluemap.core.world.BlockState(Key("~iron~chest", "~block~iron~chest"), mapOf("meta" to "2")),
+            de.bluecolored.bluemap.core.world
+                .BlockState(Key.minecraft("stone")),
+            ModelFaces.legacyState("minecraft:stone", 0),
+        )
+        assertEquals(
+            de.bluecolored.bluemap.core.world
+                .BlockState(Key("~iron~chest", "~block~iron~chest"), mapOf("meta" to "2")),
             ModelFaces.legacyState("IronChest:BlockIronChest", 2),
         )
     }
 
     @Test
     fun `AE2 facade is a 2 px plate with the covered block's textures`() {
-        val bus = te("BlockCableBus") {
-            name("facade:3").beginCompound()
-            name("id").value(4633.toShort()); name("Count").value(1.toByte()); name("Damage").value(0.toShort())
-            name("tag").beginCompound()
-            name("x").value(intArrayOf(1, 0)); name("modid").value("minecraft"); name("itemname").value("stone")
-            endCompound()
-            endCompound()
-        } as Ae2CableBusTileEntity
+        val bus =
+            te("BlockCableBus") {
+                name("facade:3").beginCompound()
+                name("id").value(4633.toShort())
+                name("Count").value(1.toByte())
+                name("Damage").value(0.toShort())
+                name("tag").beginCompound()
+                name("x").value(intArrayOf(1, 0))
+                name("modid").value("minecraft")
+                name("itemname").value("stone")
+                endCompound()
+                endCompound()
+            } as Ae2CableBusTileEntity
         assertEquals("minecraft:stone" to 0, bus.facade(3))
 
         val kit = ModTestKit(root)
         kit.stoneBlock()
         kit.cubeModel("assets/appliedenergistics2/models/block/bbox.json", "minecraft:block/stone")
-        kit.file("assets/appliedenergistics2/blockstates/tile.~block~cable~bus.json", """{"variants": {"": {"renderer": "gtnh:ae2_cable_bus", "model": "appliedenergistics2:block/bbox"}}}""")
+        kit.file(
+            "assets/appliedenergistics2/blockstates/tile.~block~cable~bus.json",
+            """{"variants": {"": {"renderer": "gtnh:ae2_cable_bus", "model": "appliedenergistics2:block/bbox"}}}""",
+        )
         val tris = kit.render(Cell(state("appliedenergistics2:tile.~block~cable~bus", 0), bus)).triangles
         assertEquals(12, tris.size)
         assertTrue(tris.all { it.texture == kit.id(Key.minecraft("block/stone")) })
@@ -315,23 +370,27 @@ class ModTileEntityRenderersTest {
 
     @Test
     fun `EnderIO bundle with a facade is drawn as the facade block`() {
-        val bundle = te("blockConduitBundleTileEntity") {
-            name("conduits").beginList(1, TagType.COMPOUND)
-            beginCompound()
-            name("conduitType").value("crazypants.enderio.conduit.item.ItemConduit")
-            name("conduit").beginCompound()
-            name("connections").value(intArrayOf(5))
-            endCompound()
-            endCompound()
-            endList()
-            name("facadeId").value("minecraft:stone")
-            name("facadeMeta").value(0)
-            name("facadeType").value("BASIC")
-        } as EioConduitBundleTileEntity
+        val bundle =
+            te("blockConduitBundleTileEntity") {
+                name("conduits").beginList(1, TagType.COMPOUND)
+                beginCompound()
+                name("conduitType").value("crazypants.enderio.conduit.item.ItemConduit")
+                name("conduit").beginCompound()
+                name("connections").value(intArrayOf(5))
+                endCompound()
+                endCompound()
+                endList()
+                name("facadeId").value("minecraft:stone")
+                name("facadeMeta").value(0)
+                name("facadeType").value("BASIC")
+            } as EioConduitBundleTileEntity
         val kit = ModTestKit(root)
         kit.stoneBlock()
         kit.cubeModel("assets/~ender~i~o/models/block/bbox.json", "minecraft:block/stone")
-        kit.file("assets/~ender~i~o/blockstates/block~conduit~bundle.json", """{"variants": {"": {"renderer": "gtnh:enderio_conduit", "model": "~ender~i~o:block/bbox"}}}""")
+        kit.file(
+            "assets/~ender~i~o/blockstates/block~conduit~bundle.json",
+            """{"variants": {"": {"renderer": "gtnh:enderio_conduit", "model": "~ender~i~o:block/bbox"}}}""",
+        )
         val result = kit.render(Cell(state("~ender~i~o:block~conduit~bundle", 0), bundle))
         assertEquals(12, result.triangles.size, "the stone cube, no conduit")
         assertTrue(result.triangles.all { it.texture == kit.id(Key.minecraft("block/stone")) })

@@ -57,7 +57,10 @@ class GtnlTesrsTest {
         fun register() = GtnhRender.register()
 
         /** Serializes a tile entity compound and reads it back like a 1.7 chunk's `TileEntities` entry. */
-        fun te(id: String, fields: NBTWriter.() -> Unit): BlockEntity? {
+        fun te(
+            id: String,
+            fields: NBTWriter.() -> Unit,
+        ): BlockEntity? {
             val out = ByteArrayOutputStream()
             NBTWriter(out).use { w ->
                 w.beginCompound()
@@ -71,21 +74,31 @@ class GtnlTesrsTest {
             return LegacyBlockEntities.blueNbt().read(ByteArrayInputStream(out.toByteArray()), BlockEntity::class.java)
         }
 
-        fun former(forward: String, up: String = "UP", hide: Boolean = false) = te("beam_former_tile_entity") {
+        fun former(
+            forward: String,
+            up: String = "UP",
+            hide: Boolean = false,
+        ) = te("beam_former_tile_entity") {
             name("orientation_forward").value(forward)
             name("orientation_up").value(up)
             name("hideBeam").value((if (hide) 1 else 0).toByte())
         }
 
-        fun cable(color: Int) = te("BlockCableBus") {
-            name("def:6").beginCompound()
-            name("id").value(1.toShort())
-            name("Count").value(1.toByte())
-            name("Damage").value(color.toShort())
-            endCompound()
-        }
+        fun cable(color: Int) =
+            te("BlockCableBus") {
+                name("def:6").beginCompound()
+                name("id").value(1.toShort())
+                name("Count").value(1.toByte())
+                name("Damage").value(color.toShort())
+                endCompound()
+            }
 
-        private fun apply(t: Transform, x: Float, y: Float, z: Float): FloatArray = FloatArray(3).also { t.apply(floatArrayOf(x, y, z), 0, it, 0) }
+        private fun apply(
+            t: Transform,
+            x: Float,
+            y: Float,
+            z: Float,
+        ): FloatArray = FloatArray(3).also { t.apply(floatArrayOf(x, y, z), 0, it, 0) }
 
         private fun ModTestKit.Triangle.ys() = (0 until 3).map { positions[it * 3 + 1] }
 
@@ -104,9 +117,15 @@ class GtnlTesrsTest {
         file("gtnh/mods/assets.json", raw.joinToString(",", """{"format": 1, "assets": {""", "}}") { (k, v) -> """"$k": "$v"""" })
     }
 
-    private fun ModTestKit.addonBlock(name: String, meta: Int = 0) {
+    private fun ModTestKit.addonBlock(
+        name: String,
+        meta: Int = 0,
+    ) {
         cubeModel("assets/sciencenotleisure/models/block/bbox.json", "minecraft:block/stone")
-        file("assets/sciencenotleisure/blockstates/$name.json", """{"variants": {"meta=$meta": {"renderer": "gtnh:addon_tesr", "model": "sciencenotleisure:block/bbox"}}}""")
+        file(
+            "assets/sciencenotleisure/blockstates/$name.json",
+            """{"variants": {"meta=$meta": {"renderer": "gtnh:addon_tesr", "model": "sciencenotleisure:block/bbox"}}}""",
+        )
     }
 
     // ---- beam former ----
@@ -126,24 +145,26 @@ class GtnlTesrsTest {
     @Test
     fun `beam former orientation maps the model's north to forward, up to up and east to forward x up`() {
         var pairs = 0
-        for (forward in Direction.entries) for (up in Direction.entries) {
-            val t = GtnlTesrs.BeamFormer.orientation(forward, up)
-            if (forward.axis == up.axis) {
-                assertNull(t)
-                continue
-            }
-            pairs++
-            assertNotNull(t, "$forward/$up")
-            val f = forward.toVector()
-            val u = up.toVector()
-            val r = intArrayOf(f.y * u.z - f.z * u.y, f.z * u.x - f.x * u.z, f.x * u.y - f.y * u.x)
-            val north = apply(t!!, 0.5f, 0.5f, 0f)
-            val top = apply(t, 0.5f, 1f, 0.5f)
-            val east = apply(t, 1f, 0.5f, 0.5f)
-            for (axis in 0 until 3) {
-                assertEquals(0.5f + 0.5f * intArrayOf(f.x, f.y, f.z)[axis], north[axis], 1e-5f, "$forward/$up north")
-                assertEquals(0.5f + 0.5f * intArrayOf(u.x, u.y, u.z)[axis], top[axis], 1e-5f, "$forward/$up up")
-                assertEquals(0.5f + 0.5f * r[axis], east[axis], 1e-5f, "$forward/$up east")
+        for (forward in Direction.entries) {
+            for (up in Direction.entries) {
+                val t = GtnlTesrs.BeamFormer.orientation(forward, up)
+                if (forward.axis == up.axis) {
+                    assertNull(t)
+                    continue
+                }
+                pairs++
+                assertNotNull(t, "$forward/$up")
+                val f = forward.toVector()
+                val u = up.toVector()
+                val r = intArrayOf(f.y * u.z - f.z * u.y, f.z * u.x - f.x * u.z, f.x * u.y - f.y * u.x)
+                val north = apply(t!!, 0.5f, 0.5f, 0f)
+                val top = apply(t, 0.5f, 1f, 0.5f)
+                val east = apply(t, 1f, 0.5f, 0.5f)
+                for (axis in 0 until 3) {
+                    assertEquals(0.5f + 0.5f * intArrayOf(f.x, f.y, f.z)[axis], north[axis], 1e-5f, "$forward/$up north")
+                    assertEquals(0.5f + 0.5f * intArrayOf(u.x, u.y, u.z)[axis], top[axis], 1e-5f, "$forward/$up up")
+                    assertEquals(0.5f + 0.5f * r[axis], east[axis], 1e-5f, "$forward/$up east")
+                }
             }
         }
         assertEquals(24, pairs)
@@ -155,15 +176,21 @@ class GtnlTesrsTest {
     @Test
     fun `JSON model elements follow the vanilla face, uv and rotation semantics`() {
         val key = Key("t", "x")
-        val model = JsonParser.parseString(
-            """{"textures": {"1": "sciencenotleisure:blocks/beam_former/beam_former_block_model", "a": "#1"}, "elements": [
+        val model =
+            JsonParser
+                .parseString(
+                    """{"textures": {"1": "sciencenotleisure:blocks/beam_former/beam_former_block_model", "a": "#1"}, "elements": [
               {"from": [4, 0, 0], "to": [12, 16, 16], "faces": {"north": {"texture": "#a"}, "up": {"uv": [0, 0, 8, 8], "rotation": 90, "texture": "#1"}}},
               {"from": [0, 0, 7], "to": [16, 16, 9], "rotation": {"origin": [8, 8, 8], "axis": "y", "angle": 45, "rescale": true},
                "faces": {"north": {"uv": [0, 0, 16, 16], "texture": "#1"}}}
             ]}""",
-        ).asJsonObject
+                ).asJsonObject
         val requested = ArrayList<String>()
-        val mesh = JsonModelMesh.mesh(model) { requested.add(it); key }!!
+        val mesh =
+            JsonModelMesh.mesh(model) {
+                requested.add(it)
+                key
+            }!!
         assertEquals(setOf("sciencenotleisure:blocks/beam_former/beam_former_block_model"), requested.toSet())
         assertEquals("sciencenotleisure:textures/blocks/beam_former/beam_former_block_model.png", JsonModelMesh.rawTexture(requested[0]))
         assertEquals(3, mesh.quads.size)
@@ -231,8 +258,10 @@ class GtnlTesrsTest {
             assertEquals(1f, beamTris.maxOf { t -> (0 until 3).maxOf { t.uvs[it * 2 + 1] } }, 1e-6f, "one texture stretch")
         }
 
-        fun beamCount(vararg cells: Pair<Triple<Int, Int, Int>, Cell>, center: Cell = Cell(state, former("SOUTH"))) =
-            kit.render(center, *cells).triangles.count { it.texture == beam }
+        fun beamCount(
+            vararg cells: Pair<Triple<Int, Int, Int>, Cell>,
+            center: Cell = Cell(state, former("SOUTH")),
+        ) = kit.render(center, *cells).triangles.count { it.texture == beam }
         // a former facing the same way does not pair
         assertEquals(0, beamCount(Triple(0, 0, 3) to Cell(state, former("SOUTH"))))
         // an opaque block in between stops the beam; the 256 limit too
@@ -255,12 +284,23 @@ class GtnlTesrsTest {
         val state = state("sciencenotleisure:beam_former", 0)
         val bus = state("appliedenergistics2:tile.~block~cable~bus", 0)
         val beam = kit.id(Key.minecraft("entity/beacon_beam"))
-        fun colors(source: Int?, target: Int?): Set<Int> {
+
+        fun colors(
+            source: Int?,
+            target: Int?,
+        ): Set<Int> {
             val cells = ArrayList<Pair<Triple<Int, Int, Int>, Cell>>()
             cells.add(Triple(0, 0, 4) to Cell(state, former("NORTH")))
             if (source != null) cells.add(Triple(0, 0, -1) to Cell(bus, cable(source)))
             if (target != null) cells.add(Triple(0, 0, 5) to Cell(bus, cable(target)))
-            return kit.render(Cell(state, former("SOUTH")), *cells.toTypedArray()).triangles.filter { it.texture == beam }.map(::rgb).toSet()
+            return kit
+                .render(
+                    Cell(state, former("SOUTH")),
+                    *cells.toTypedArray(),
+                ).triangles
+                .filter { it.texture == beam }
+                .map(::rgb)
+                .toSet()
         }
         // red (14) behind the source, nothing (fluix) behind the target
         assertEquals(setOf(0xFF003C), colors(14, null))
@@ -275,7 +315,10 @@ class GtnlTesrsTest {
 
     // ---- multi essentia jar ----
 
-    private fun jar(active: String, vararg aspects: Pair<String, Int>) = te("multi_essentia_jar_tile_entity") {
+    private fun jar(
+        active: String,
+        vararg aspects: Pair<String, Int>,
+    ) = te("multi_essentia_jar_tile_entity") {
         name("StoredAspects").beginCompound()
         name("Aspects").beginList(aspects.size, TagType.COMPOUND)
         for ((key, amount) in aspects) {
@@ -308,7 +351,14 @@ class GtnlTesrsTest {
         assertEquals(listOf("ordo", "terra", "aqua"), fallback.map { it.aspect })
         assertEquals(0.0625 + 3 * 0.015625, fallback.last().top, 1e-9)
         // a full jar stops at 0.625 of liquid
-        assertEquals(0.0625 + 0.625, GtnlTesrs.MultiEssentiaJar.layers(jar("aer", "aer" to 4096)).last().top, 1e-9)
+        assertEquals(
+            0.0625 + 0.625,
+            GtnlTesrs.MultiEssentiaJar
+                .layers(jar("aer", "aer" to 4096))
+                .last()
+                .top,
+            1e-9,
+        )
         assertTrue(GtnlTesrs.MultiEssentiaJar.layers(jar("")).isEmpty())
     }
 
@@ -344,8 +394,15 @@ class GtnlTesrsTest {
     fun `water candle model has four candles and crossed flame planes, unflipped`() {
         val mesh = GtnlTesrs.WaterCandle.build(Key("t", "x"))
         assertEquals(4 * 6 + 8 * 2, mesh.quads.size)
-        fun bounds(q: de.bluecolored.bluemap.gtnh.render.mods.MeshQuad, axis: Int) = (0 until 4).map { q.positions[it * 3 + axis] }
-        val all = mesh.quads.flatMap { q -> (0 until 4).map { i -> Triple(q.positions[i * 3], q.positions[i * 3 + 1], q.positions[i * 3 + 2]) } }
+
+        fun bounds(
+            q: de.bluecolored.bluemap.gtnh.render.mods.MeshQuad,
+            axis: Int,
+        ) = (0 until 4).map { q.positions[it * 3 + axis] }
+        val all =
+            mesh.quads.flatMap { q ->
+                (0 until 4).map { i -> Triple(q.positions[i * 3], q.positions[i * 3 + 1], q.positions[i * 3 + 2]) }
+            }
         assertEquals(0f, all.minOf { it.second }, 1e-5f)
         // tallest candle 6 px, its flame plane 1 px above
         assertEquals(7f / 16, all.maxOf { it.second }, 1e-5f)
@@ -383,7 +440,10 @@ class GtnlTesrsTest {
         val expected = mapOf(2 to Triple(0, 0, -1), 3 to Triple(0, 0, 1), 4 to Triple(-1, 0, 0), 5 to Triple(1, 0, 0))
         for ((meta, facing) in expected) {
             kit.addonBlock("player_doll", meta)
-            val tris = ModTestKit(root).render(Cell(state("sciencenotleisure:player_doll", meta), te("player_doll_tile_entity") {})).triangles
+            val tris =
+                ModTestKit(
+                    root,
+                ).render(Cell(state("sciencenotleisure:player_doll", meta), te("player_doll_tile_entity") {})).triangles
             // head + slim arm only
             assertEquals(4, tris.size, "meta $meta")
             val head = tris.take(2)
@@ -395,11 +455,14 @@ class GtnlTesrsTest {
 
     @Test
     fun `pigmee fumo turns its nose to the meta side`() {
-        val model = JsonParser.parseString(
-            """{"textures": {"0": "sciencenotleisure:blocks/pigmee_fumo"}, "elements": [
+        val model =
+            JsonParser
+                .parseString(
+                    """{"textures": {"0": "sciencenotleisure:blocks/pigmee_fumo"}, "elements": [
               {"from": [6, 3, 1], "to": [10, 6, 2], "faces": {"north": {"uv": [8, 4, 10, 5.5], "texture": "#0"}}}]}""",
-        ).toString()
-        val expected = mapOf(2 to Triple(0, 0, -1), 0 to Triple(0, 0, -1), 3 to Triple(0, 0, 1), 4 to Triple(-1, 0, 0), 5 to Triple(1, 0, 0))
+                ).toString()
+        val expected =
+            mapOf(2 to Triple(0, 0, -1), 0 to Triple(0, 0, -1), 3 to Triple(0, 0, 1), 4 to Triple(-1, 0, 0), 5 to Triple(1, 0, 0))
         for ((meta, facing) in expected) {
             val kit = ModTestKit(root)
             kit.png("assets/sciencenotleisure/textures/block/pigmee_fumo.png", 0xE0C0A0, 32, 32)
@@ -464,8 +527,12 @@ class GtnlTesrsTest {
         val ids = GtnlTesrs.ALL.flatMap { it.ids }.toSet()
         assertEquals(
             setOf(
-                "beam_former_tile_entity", "multi_essentia_jar_tile_entity", "water_candle_tile_entity",
-                "player_doll_tile_entity", "pigmee_fumo_tile_entity", "ender_elevator_tile_entity",
+                "beam_former_tile_entity",
+                "multi_essentia_jar_tile_entity",
+                "water_candle_tile_entity",
+                "player_doll_tile_entity",
+                "pigmee_fumo_tile_entity",
+                "ender_elevator_tile_entity",
             ),
             ids,
         )

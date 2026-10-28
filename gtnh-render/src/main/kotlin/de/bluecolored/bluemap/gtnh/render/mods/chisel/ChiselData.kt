@@ -69,14 +69,20 @@ class ChiselVariant(
 }
 
 /** `gtnh/mods/chisel.json`: block state key -> meta -> variant; only full cubes are listed. */
-class ChiselData(private val blocks: Map<Key, Map<Int, ChiselVariant>>) {
+class ChiselData(
+    private val blocks: Map<Key, Map<Int, ChiselVariant>>,
+) {
     val size: Int get() = blocks.values.sumOf { it.size }
 
-    operator fun get(block: Key, meta: Int): ChiselVariant? = blocks[block]?.get(meta)
+    operator fun get(
+        block: Key,
+        meta: Int,
+    ): ChiselVariant? = blocks[block]?.get(meta)
 
-    fun textureKeys(): Set<Key> = blocks.values.flatMapTo(HashSet()) { metas ->
-        metas.values.flatMap { listOfNotNull(it.base, it.sheet, it.top) }
-    }
+    fun textureKeys(): Set<Key> =
+        blocks.values.flatMapTo(HashSet()) { metas ->
+            metas.values.flatMap { listOfNotNull(it.base, it.sheet, it.top) }
+        }
 
     companion object {
         fun parse(json: JsonObject): ChiselData {
@@ -88,15 +94,33 @@ class ChiselData(private val blocks: Map<Key, Map<Int, ChiselVariant>>) {
                     if (entry.get("fullCube")?.asBoolean == false) return@metas
                     val type = runCatching { ChiselType.valueOf(entry.get("type").asString) }.getOrNull() ?: return@metas
                     val textures = entry.getAsJsonObject("textures") ?: return@metas
-                    fun tex(name: String): Key? = textures.get(name)?.takeIf { !it.isJsonNull }?.asString?.let(Key::parse)
-                    val variant = when (type) {
-                        ChiselType.CTMX -> {
-                            val base = tex("base") ?: return@metas
-                            ChiselVariant(type, base, tex("ctm") ?: return@metas, null)
+
+                    fun tex(name: String): Key? =
+                        textures
+                            .get(name)
+                            ?.takeIf { !it.isJsonNull }
+                            ?.asString
+                            ?.let(Key::parse)
+                    val variant =
+                        when (type) {
+                            ChiselType.CTMX -> {
+                                val base = tex("base") ?: return@metas
+                                ChiselVariant(type, base, tex("ctm") ?: return@metas, null)
+                            }
+
+                            ChiselType.CTMV, ChiselType.CTMH -> {
+                                ChiselVariant(
+                                    type,
+                                    null,
+                                    tex("sheet") ?: return@metas,
+                                    tex("top") ?: return@metas,
+                                )
+                            }
+
+                            else -> {
+                                ChiselVariant(type, null, tex("sheet") ?: return@metas, null)
+                            }
                         }
-                        ChiselType.CTMV, ChiselType.CTMH -> ChiselVariant(type, null, tex("sheet") ?: return@metas, tex("top") ?: return@metas)
-                        else -> ChiselVariant(type, null, tex("sheet") ?: return@metas, null)
-                    }
                     variants[meta.toIntOrNull() ?: return@metas] = variant
                 }
                 if (variants.isNotEmpty()) blocks[Key.parse(blockKey)] = variants

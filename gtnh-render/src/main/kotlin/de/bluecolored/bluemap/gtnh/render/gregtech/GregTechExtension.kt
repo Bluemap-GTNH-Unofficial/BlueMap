@@ -38,7 +38,9 @@ import kotlin.io.path.isRegularFile
  * Loads the exporter's GregTech dump (the JSON files in `gtnh/gregtech/`) once per resource-pack load. Each file comes from the
  * highest-priority pack that has it. Its textures are added to the atlas.
  */
-class GregTechExtension(private val pack: ResourcePack) : ResourcePackExtension {
+class GregTechExtension(
+    private val pack: ResourcePack,
+) : ResourcePackExtension {
     @Volatile
     var data: GtData? = null
         private set

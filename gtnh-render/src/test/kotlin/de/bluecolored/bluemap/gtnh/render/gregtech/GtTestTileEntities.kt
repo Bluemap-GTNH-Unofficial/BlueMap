@@ -36,7 +36,10 @@ object GtTestTileEntities {
         GregTechRender.register()
     }
 
-    fun read(id: String, fields: NBTWriter.() -> Unit): BlockEntity? {
+    fun read(
+        id: String,
+        fields: NBTWriter.() -> Unit,
+    ): BlockEntity? {
         val out = ByteArrayOutputStream()
         NBTWriter(out).use { w ->
             w.beginCompound()
@@ -75,7 +78,11 @@ object GtTestTileEntities {
         } as GtTileEntity
 
     /** A `BaseMetaPipeEntity`: `mConnections` and `mColor` are bytes. */
-    fun pipe(id: Int, connections: Int, color: Int = 0): GtTileEntity =
+    fun pipe(
+        id: Int,
+        connections: Int,
+        color: Int = 0,
+    ): GtTileEntity =
         read("BaseMetaPipeEntity") {
             name("mID").value(id)
             name("mConnections").value(connections.toByte())

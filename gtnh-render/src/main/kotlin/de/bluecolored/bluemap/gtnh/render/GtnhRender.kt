@@ -38,10 +38,11 @@ object GtnhRender {
     val QUADS_KEY: Key = Key("gtnh", "quads")
 
     @JvmField
-    val QUADS: BlockRendererType = BlockRendererType.Impl(
-        QUADS_KEY,
-        BlockRendererFactory { pack, textureGallery, renderSettings -> QuadModelRenderer(pack, textureGallery, renderSettings) },
-    )
+    val QUADS: BlockRendererType =
+        BlockRendererType.Impl(
+            QUADS_KEY,
+            BlockRendererFactory { pack, textureGallery, renderSettings -> QuadModelRenderer(pack, textureGallery, renderSettings) },
+        )
 
     @Volatile
     private var registered = false
@@ -58,8 +59,10 @@ object GtnhRender {
         BlockRendererType.REGISTRY.register(QUADS)
         ResourcePack.Extension.REGISTRY.register(QuadModelExtension.TYPE)
         ResourcePack.Extension.REGISTRY.register(MissingBlockStates.TYPE)
-        de.bluecolored.bluemap.gtnh.render.gregtech.GregTechRender.register()
-        de.bluecolored.bluemap.gtnh.render.mods.ModRenderers.register()
+        de.bluecolored.bluemap.gtnh.render.gregtech.GregTechRender
+            .register()
+        de.bluecolored.bluemap.gtnh.render.mods.ModRenderers
+            .register()
         CoverageReport.install()
     }
 }

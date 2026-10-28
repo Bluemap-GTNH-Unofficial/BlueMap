@@ -57,7 +57,12 @@ class QuadModelRenderer(
     private val direction = VectorM3f(0f, 0f, 0f)
     private val textureIds = IntArray(64)
 
-    override fun render(block: BlockNeighborhood, variant: Variant, blockModel: TileModelView, color: Color) {
+    override fun render(
+        block: BlockNeighborhood,
+        variant: Variant,
+        blockModel: TileModelView,
+        color: Color,
+    ) {
         val model = extension[variant.model] ?: return
         tintColor.set(0f, 0f, 0f, -1f, true)
         var blockColorOpacity = 0f
@@ -76,7 +81,9 @@ class QuadModelRenderer(
 
             if (block.isRemoveIfCave &&
                 (if (renderSettings.isCaveDetectionUsesBlockLight) max(blockLight, sunLight) else sunLight) == 0
-            ) continue
+            ) {
+                continue
+            }
 
             if (renderSettings.isRenderTopOnly && quad.normalY < 0.01f) continue
 
@@ -158,14 +165,24 @@ class QuadModelRenderer(
         }
     }
 
-    private fun relativeBlock(block: BlockNeighborhood, variant: Variant, dx: Int, dy: Int, dz: Int): ExtendedBlock {
+    private fun relativeBlock(
+        block: BlockNeighborhood,
+        variant: Variant,
+        dx: Int,
+        dy: Int,
+        dz: Int,
+    ): ExtendedBlock {
         if (!variant.isTransformed) return block.getNeighborBlock(dx, dy, dz)
         direction.set(dx.toFloat(), dy.toFloat(), dz.toFloat())
         direction.rotateAndScale(variant.transformMatrix)
         return block.getNeighborBlock(direction.x.roundToInt(), direction.y.roundToInt(), direction.z.roundToInt())
     }
 
-    private fun hashToFloat(x: Int, z: Int, seed: Long): Float {
+    private fun hashToFloat(
+        x: Int,
+        z: Int,
+        seed: Long,
+    ): Float {
         val hash = x * 73428767L xor z * 4382893L xor seed * 457
         return (hash * (hash + 456149) and 0x00ffffff) / 0x01000000.toFloat()
     }

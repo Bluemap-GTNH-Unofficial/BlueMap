@@ -32,14 +32,23 @@ import java.io.Reader
  * A Wavefront model as Forge 1.7.10's `WavefrontObject` reads it: vertices, texture coordinates (v flipped,
  * `1 - v`) and polygon faces per group (`g`/`o`). Faces with 3 or 4 vertices are kept; larger polygons are fanned.
  */
-class ObjModel(val groups: Map<String, List<Face>>) {
+class ObjModel(
+    val groups: Map<String, List<Face>>,
+) {
     /** [positions]: 3 per vertex (model units), [uvs]: 2 per vertex (0..1, v already flipped). */
-    class Face(val positions: FloatArray, val uvs: FloatArray) {
+    class Face(
+        val positions: FloatArray,
+        val uvs: FloatArray,
+    ) {
         val vertexCount: Int get() = positions.size / 3
     }
 
     /** The faces of [names] (all groups when null) as mesh quads in model space with one texture. */
-    fun mesh(texture: Key, names: Collection<String>? = null, rgb: Int = MeshQuad.WHITE): Mesh {
+    fun mesh(
+        texture: Key,
+        names: Collection<String>? = null,
+        rgb: Int = MeshQuad.WHITE,
+    ): Mesh {
         val quads = ArrayList<MeshQuad>()
         val selected = if (names == null) groups.values else names.mapNotNull { groups[it] }
         for (faces in selected) for (face in faces) quads.add(face.toQuad(texture, rgb))
@@ -57,21 +66,35 @@ class ObjModel(val groups: Map<String, List<Face>>) {
                 if (line.isEmpty() || line.startsWith("#")) return@forEach
                 val tokens = line.split(WHITESPACE)
                 when (tokens[0]) {
-                    "v" -> vertices.add(floatArrayOf(tokens[1].toFloat(), tokens[2].toFloat(), tokens[3].toFloat()))
-                    "vt" -> textureCoords.add(floatArrayOf(tokens[1].toFloat(), 1f - tokens.getOrElse(2) { "0" }.toFloat()))
-                    "g", "o" -> current = groups.getOrPut(tokens.getOrElse(1) { "default" }) { ArrayList() }
+                    "v" -> {
+                        vertices.add(floatArrayOf(tokens[1].toFloat(), tokens[2].toFloat(), tokens[3].toFloat()))
+                    }
+
+                    "vt" -> {
+                        textureCoords.add(floatArrayOf(tokens[1].toFloat(), 1f - tokens.getOrElse(2) { "0" }.toFloat()))
+                    }
+
+                    "g", "o" -> {
+                        current = groups.getOrPut(tokens.getOrElse(1) { "default" }) { ArrayList() }
+                    }
+
                     "f" -> {
-                        val refs = tokens.drop(1).map { ref ->
-                            val parts = ref.split('/')
-                            val v = index(parts[0].toInt(), vertices.size)
-                            val t = parts.getOrNull(1)?.takeIf { it.isNotEmpty() }?.let { index(it.toInt(), textureCoords.size) }
-                            v to t
-                        }
+                        val refs =
+                            tokens.drop(1).map { ref ->
+                                val parts = ref.split('/')
+                                val v = index(parts[0].toInt(), vertices.size)
+                                val t = parts.getOrNull(1)?.takeIf { it.isNotEmpty() }?.let { index(it.toInt(), textureCoords.size) }
+                                v to t
+                            }
                         // fan polygons into triangles/quads the way GL_POLYGON would
                         if (refs.size <= 4) {
                             current.add(face(refs, vertices, textureCoords))
                         } else {
-                            for (i in 1 until refs.size - 1) current.add(face(listOf(refs[0], refs[i], refs[i + 1]), vertices, textureCoords))
+                            for (i in 1 until refs.size - 1) {
+                                current.add(
+                                    face(listOf(refs[0], refs[i], refs[i + 1]), vertices, textureCoords),
+                                )
+                            }
                         }
                     }
                 }
@@ -79,7 +102,11 @@ class ObjModel(val groups: Map<String, List<Face>>) {
             return ObjModel(groups.filterValues { it.isNotEmpty() })
         }
 
-        private fun face(refs: List<Pair<Int, Int?>>, vertices: List<FloatArray>, textureCoords: List<FloatArray>): Face {
+        private fun face(
+            refs: List<Pair<Int, Int?>>,
+            vertices: List<FloatArray>,
+            textureCoords: List<FloatArray>,
+        ): Face {
             val n = refs.size
             val p = FloatArray(n * 3)
             val uv = FloatArray(n * 2)
@@ -90,13 +117,19 @@ class ObjModel(val groups: Map<String, List<Face>>) {
             return Face(p, uv)
         }
 
-        private fun index(i: Int, size: Int): Int = if (i < 0) size + i else i - 1
+        private fun index(
+            i: Int,
+            size: Int,
+        ): Int = if (i < 0) size + i else i - 1
 
         private val WHITESPACE = Regex("\\s+")
     }
 }
 
-private fun ObjModel.Face.toQuad(texture: Key, rgb: Int): MeshQuad {
+private fun ObjModel.Face.toQuad(
+    texture: Key,
+    rgb: Int,
+): MeshQuad {
     val p = FloatArray(12)
     val uv = FloatArray(8)
     val n = vertexCount

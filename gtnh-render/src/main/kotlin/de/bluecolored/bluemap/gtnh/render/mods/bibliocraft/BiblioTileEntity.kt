@@ -102,28 +102,37 @@ class BiblioTileEntity : MCABlockEntity() {
     var monoleg: Int = 1
         private set
 
-    fun angle(furniture: BiblioCraftRenderer.Furniture): Int = when (furniture) {
-        BiblioCraftRenderer.Furniture.BOOKCASE -> bookcaseAngle
-        BiblioCraftRenderer.Furniture.SHELF -> genericShelfAngle
-        BiblioCraftRenderer.Furniture.POTION_SHELF -> potionShelfAngle
-        BiblioCraftRenderer.Furniture.TOOL_RACK -> rackAngle
-        BiblioCraftRenderer.Furniture.LABEL -> labelAngle
-        BiblioCraftRenderer.Furniture.CASE -> caseAngle
-        else -> 0
-    }
+    fun angle(furniture: BiblioCraftRenderer.Furniture): Int =
+        when (furniture) {
+            BiblioCraftRenderer.Furniture.BOOKCASE -> bookcaseAngle
+            BiblioCraftRenderer.Furniture.SHELF -> genericShelfAngle
+            BiblioCraftRenderer.Furniture.POTION_SHELF -> potionShelfAngle
+            BiblioCraftRenderer.Furniture.TOOL_RACK -> rackAngle
+            BiblioCraftRenderer.Furniture.LABEL -> labelAngle
+            BiblioCraftRenderer.Furniture.CASE -> caseAngle
+            else -> 0
+        }
 
     /** The fields that change a furniture's mesh. */
-    fun stateKey(furniture: BiblioCraftRenderer.Furniture): List<Int> = when (furniture) {
-        BiblioCraftRenderer.Furniture.TABLE -> listOf(leg1, leg2, leg3, leg4, top1, top2, top3, top4, monoleg)
-        BiblioCraftRenderer.Furniture.SHELF -> listOf(angle(furniture), shifted, rendersTop)
-        else -> listOf(angle(furniture), shifted)
-    }
+    fun stateKey(furniture: BiblioCraftRenderer.Furniture): List<Int> =
+        when (furniture) {
+            BiblioCraftRenderer.Furniture.TABLE -> listOf(leg1, leg2, leg3, leg4, top1, top2, top3, top4, monoleg)
+            BiblioCraftRenderer.Furniture.SHELF -> listOf(angle(furniture), shifted, rendersTop)
+            else -> listOf(angle(furniture), shifted)
+        }
 
     companion object {
         /** Tile entity ids (`GameRegistry.registerTileEntity`) of the drawn furniture. */
-        val IDS = listOf(
-            "BookcaseTile", "GenericShelfTile", "PotionShelfTile", "ToolRackTile", "WoodLabelTile", "WeaponCaseTile", "TableTile",
-        )
+        val IDS =
+            listOf(
+                "BookcaseTile",
+                "GenericShelfTile",
+                "PotionShelfTile",
+                "ToolRackTile",
+                "WoodLabelTile",
+                "WeaponCaseTile",
+                "TableTile",
+            )
 
         val BLOCK_ENTITY_TYPES: List<BlockEntityType> = IDS.map { BlockEntityType.Impl(Key.minecraft(it), BiblioTileEntity::class.java) }
     }

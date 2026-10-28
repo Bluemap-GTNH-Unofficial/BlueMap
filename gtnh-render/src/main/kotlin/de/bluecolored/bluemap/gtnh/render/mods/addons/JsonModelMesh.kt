@@ -72,7 +72,10 @@ object JsonModelMesh {
      * The model's faces in block space (0..1), each with the texture [texture] returns for its resolved texture
      * name. Null when a face's texture is missing from the pack.
      */
-    fun mesh(model: JsonObject, texture: (String) -> Key?): Mesh? {
+    fun mesh(
+        model: JsonObject,
+        texture: (String) -> Key?,
+    ): Mesh? {
         val textures = textures(model)
         val quads = ArrayList<MeshQuad>()
         for (e in model.getAsJsonArray("elements") ?: return Mesh.EMPTY) {
@@ -90,11 +93,12 @@ object JsonModelMesh {
                 val key = texture(textureName) ?: return null
                 val uv = face.getAsJsonArray("uv")?.let(::floats)
                 val rotation = Math.floorMod((face.get("rotation")?.asInt ?: 0) / 90, 4)
-                val faceTexture = if (uv != null) {
-                    FaceTexture(key, uv[0] / 16f, uv[1] / 16f, uv[2] / 16f, uv[3] / 16f, rotation)
-                } else {
-                    MeshBuilder.autoUv(dir, from[0], from[1], from[2], to[0], to[1], to[2], key).copy(rotation = rotation)
-                }
+                val faceTexture =
+                    if (uv != null) {
+                        FaceTexture(key, uv[0] / 16f, uv[1] / 16f, uv[2] / 16f, uv[3] / 16f, rotation)
+                    } else {
+                        MeshBuilder.autoUv(dir, from[0], from[1], from[2], to[0], to[1], to[2], key).copy(rotation = rotation)
+                    }
                 val quad = Faces.face(dir, fromBlock, toBlock, faceTexture)
                 quads.add(if (transform != null) quad.transformed(transform) else quad)
             }
@@ -111,32 +115,37 @@ object JsonModelMesh {
         val back = Transform.translate(-origin[0] / 16f, -origin[1] / 16f, -origin[2] / 16f)
         val axis = rotation.get("axis")?.asString ?: return null
         val s = if (rotation.get("rescale")?.asBoolean == true) 1f / cos(Math.toRadians(angle.toDouble())).toFloat() else 1f
-        val (turn, scale) = when (axis) {
-            "x" -> Transform.rotate(angle, 1f, 0f, 0f) to Transform.scale(1f, s, s)
-            "y" -> Transform.rotate(angle, 0f, 1f, 0f) to Transform.scale(s, 1f, s)
-            "z" -> Transform.rotate(angle, 0f, 0f, 1f) to Transform.scale(s, s, 1f)
-            else -> return null
-        }
+        val (turn, scale) =
+            when (axis) {
+                "x" -> Transform.rotate(angle, 1f, 0f, 0f) to Transform.scale(1f, s, s)
+                "y" -> Transform.rotate(angle, 0f, 1f, 0f) to Transform.scale(s, 1f, s)
+                "z" -> Transform.rotate(angle, 0f, 0f, 1f) to Transform.scale(s, s, 1f)
+                else -> return null
+            }
         // scaling the two other axes evenly commutes with the rotation about this one
         return Transform.gl(o, turn, scale, back)
     }
 
-    private fun direction(name: String): Direction? = when (name) {
-        "down" -> Direction.DOWN
-        "up" -> Direction.UP
-        "north" -> Direction.NORTH
-        "south" -> Direction.SOUTH
-        "west" -> Direction.WEST
-        "east" -> Direction.EAST
-        else -> null
-    }
+    private fun direction(name: String): Direction? =
+        when (name) {
+            "down" -> Direction.DOWN
+            "up" -> Direction.UP
+            "north" -> Direction.NORTH
+            "south" -> Direction.SOUTH
+            "west" -> Direction.WEST
+            "east" -> Direction.EAST
+            else -> null
+        }
 
     private fun floats(array: JsonArray): FloatArray = FloatArray(array.size()) { array[it].asFloat }
 }
 
 /** Placed JSON model meshes, per model instance (identity: a reload brings new instances) and placement. */
 internal object JsonMeshes {
-    private class CacheKey(val model: JsonObject, val params: Any) {
+    private class CacheKey(
+        val model: JsonObject,
+        val params: Any,
+    ) {
         override fun equals(other: Any?): Boolean = other is CacheKey && other.model === model && other.params == params
 
         override fun hashCode(): Int = System.identityHashCode(model) * 31 + params.hashCode()
@@ -145,7 +154,11 @@ internal object JsonMeshes {
     private val cache = ConcurrentHashMap<CacheKey, Mesh>()
 
     /** The cached mesh, or [build]'s (not cached when null: assets missing). */
-    fun get(model: JsonObject, params: Any, build: () -> Mesh?): Mesh? {
+    fun get(
+        model: JsonObject,
+        params: Any,
+        build: () -> Mesh?,
+    ): Mesh? {
         val key = CacheKey(model, params)
         cache[key]?.let { return it }
         return build()?.also { cache[key] = it }

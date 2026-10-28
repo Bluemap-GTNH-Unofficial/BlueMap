@@ -59,22 +59,31 @@ object CoverageReport {
     val enabled: Boolean get() = System.getProperty(PROPERTY) != null
 
     @JvmField
-    val TYPE: ResourcePack.Extension<Extension> = object : ResourcePack.Extension<Extension> {
-        private val key = Key("gtnh", "coverage_report")
+    val TYPE: ResourcePack.Extension<Extension> =
+        object : ResourcePack.Extension<Extension> {
+            private val key = Key("gtnh", "coverage_report")
 
-        override fun getKey(): Key = key
+            override fun getKey(): Key = key
 
-        override fun create(pack: ResourcePack): Extension = Extension(pack)
-    }
+            override fun create(pack: ResourcePack): Extension = Extension(pack)
+        }
 
-    class Extension(private val pack: ResourcePack) : ResourcePackExtension {
-        override fun getBlockProperties(blockState: BlockState, propertiesBuilder: BlockProperties.Builder) {
+    class Extension(
+        private val pack: ResourcePack,
+    ) : ResourcePackExtension {
+        override fun getBlockProperties(
+            blockState: BlockState,
+            propertiesBuilder: BlockProperties.Builder,
+        ) {
             if (blockState.isAir) return
             states[blockState] = classify(pack, blockState)
         }
     }
 
-    fun classify(pack: ResourcePack, state: BlockState): Status {
+    fun classify(
+        pack: ResourcePack,
+        state: BlockState,
+    ): Status {
         // the block's own blockstate file (MissingBlockStates maps absent modded ids to bluemap:missing)
         if (pack.blockStates[state.id] == null) return Status.NO_BLOCKSTATE
         val resource = pack.getBlockState(state) ?: return Status.NO_BLOCKSTATE
@@ -83,12 +92,13 @@ object CoverageReport {
         val quads = pack.getExtension(QuadModelExtension.TYPE)
         resource.forEach(state, 0, 0, 0) { variant ->
             variants++
-            val found = when (variant.renderer) {
-                GtnhRender.QUADS -> quads?.get(variant.model) != null
-                BlockRendererType.DEFAULT, BlockRendererType.LIQUID -> variant.model.getResource(pack.models::get) != null
-                BlockRendererType.MISSING -> false
-                else -> true
-            }
+            val found =
+                when (variant.renderer) {
+                    GtnhRender.QUADS -> quads?.get(variant.model) != null
+                    BlockRendererType.DEFAULT, BlockRendererType.LIQUID -> variant.model.getResource(pack.models::get) != null
+                    BlockRendererType.MISSING -> false
+                    else -> true
+                }
             if (found) resolved++
         }
         return when {
@@ -112,7 +122,8 @@ object CoverageReport {
     fun snapshot(): Map<String, Map<String, List<String>>> {
         val result = TreeMap<String, TreeMap<String, MutableList<String>>>()
         for ((state, status) in states) {
-            result.getOrPut(state.id.namespace) { TreeMap() }
+            result
+                .getOrPut(state.id.namespace) { TreeMap() }
                 .getOrPut(status.name.lowercase()) { ArrayList() }
                 .add(state.toString())
         }

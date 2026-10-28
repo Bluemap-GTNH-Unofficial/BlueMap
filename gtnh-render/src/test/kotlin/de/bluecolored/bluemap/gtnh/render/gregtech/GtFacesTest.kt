@@ -44,7 +44,8 @@ class GtFacesTest {
 
     @Test
     fun `tile entity NBT with GT tag types`() {
-        val te = machine(10, facing = 5, active = true, color = 3, mainFacing = 4, texturePage = 1, textureIndex = 2, rotation = 3, flip = 1)
+        val te =
+            machine(10, facing = 5, active = true, color = 3, mainFacing = 4, texturePage = 1, textureIndex = 2, rotation = 3, flip = 1)
         assertEquals(10, te.mteId)
         assertEquals(5, te.facing)
         assertTrue(te.active)
@@ -71,7 +72,14 @@ class GtFacesTest {
             val inactive = sides(GtFaces.machine(data, mte, machine(10, facing = facing)))
             val active = sides(GtFaces.machine(data, mte, machine(10, facing = facing, active = true)))
             for (side in 0 until 6) {
-                val expected = if (side == facing) null else if (side == Side.UP) listOf("casing_top") else listOf("casing_side")
+                val expected =
+                    if (side == facing) {
+                        null
+                    } else if (side == Side.UP) {
+                        listOf("casing_top")
+                    } else {
+                        listOf("casing_side")
+                    }
                 if (expected != null) {
                     assertEquals(expected, inactive[side], "facing $facing side $side")
                     assertEquals(expected, active[side])
@@ -95,7 +103,10 @@ class GtFacesTest {
         assertEquals(listOf("casing_top"), south[1])
         // output up / down
         assertEquals(listOf("casing_top", "out_pipe"), sides(GtFaces.machine(data, mte, machine(20, facing = 1, mainFacing = 4)))[1])
-        assertEquals(listOf("casing_side", "casing_top", "out_pipe"), sides(GtFaces.machine(data, mte, machine(20, facing = 0, mainFacing = 4)))[0])
+        assertEquals(
+            listOf("casing_side", "casing_top", "out_pipe"),
+            sides(GtFaces.machine(data, mte, machine(20, facing = 0, mainFacing = 4)))[0],
+        )
         // output on the front: the front wins
         val same = sides(GtFaces.machine(data, mte, machine(20, facing = 5, mainFacing = 5)))
         assertEquals(listOf("casing_side", "front"), same[5])
@@ -148,7 +159,11 @@ class GtFacesTest {
     @Test
     fun `pipe sides show the end texture where connected, straight for a single connection`() {
         val pipe = data.mtes.getValue(5101).pipe!!
-        fun face(connections: Int, side: Int) = textures(GtFaces.pipe(data, pipe, connections, side, -1))!!.single()
+
+        fun face(
+            connections: Int,
+            side: Int,
+        ) = textures(GtFaces.pipe(data, pipe, connections, side, -1))!!.single()
         // no connection: end texture everywhere
         for (side in 0 until 6) assertEquals("pipe_end", face(0, side))
         // single connection west: treated as west-east

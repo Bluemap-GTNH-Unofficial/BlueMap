@@ -72,24 +72,56 @@ class GtRendererTest {
 
         private val TEXTURES =
             listOf(
-                "casing_side", "casing_top", "front", "front_overlay", "front_active", "hatch_overlay", "out_pipe", "wire",
-                "insulation", "pipe_end", "pipe_side", "ctrl_front", "copied", "glass", "hidden", "shown",
-                "casing_cleanstainless", "frame_dull", "frame_metallic", "stone", "netherrack", "mars", "ore_metallic",
-                "ore_metallic_overlay", "ore_small_metallic", "ore_nether", "ore_small_nether", "ore_shiny",
-                "ore_small_shiny", "ore_none", "unused",
+                "casing_side",
+                "casing_top",
+                "front",
+                "front_overlay",
+                "front_active",
+                "hatch_overlay",
+                "out_pipe",
+                "wire",
+                "insulation",
+                "pipe_end",
+                "pipe_side",
+                "ctrl_front",
+                "copied",
+                "glass",
+                "hidden",
+                "shown",
+                "casing_cleanstainless",
+                "frame_dull",
+                "frame_metallic",
+                "stone",
+                "netherrack",
+                "mars",
+                "ore_metallic",
+                "ore_metallic_overlay",
+                "ore_small_metallic",
+                "ore_nether",
+                "ore_small_nether",
+                "ore_shiny",
+                "ore_small_shiny",
+                "ore_none",
+                "unused",
             )
     }
 
     @TempDir
     lateinit var root: Path
 
-    private fun file(path: String, content: String) {
+    private fun file(
+        path: String,
+        content: String,
+    ) {
         val file = root.resolve(path)
         file.parent.createDirectories()
         file.writeText(content)
     }
 
-    private fun png(path: String, rgb: Int) {
+    private fun png(
+        path: String,
+        rgb: Int,
+    ) {
         val file = root.resolve(path)
         file.parent.createDirectories()
         val image = BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB)
@@ -101,11 +133,28 @@ class GtRendererTest {
         file("assets/minecraft/atlases/blocks.json", """{"sources": [{"type": "minecraft:directory", "source": "", "prefix": ""}]}""")
         GtFixtures.write(root)
         TEXTURES.forEachIndexed { i, name -> png("assets/t/textures/block/$name.png", 0x102030 * (i + 1) and 0xFFFFFF) }
-        file("assets/gregtech/blockstates/gt.blockmachines.json", """{"variants": {"": {"renderer": "gtnh:gt_machine", "model": "t:block/cube"}}}""")
-        file("assets/gregtech/blockstates/gt.blockores2.json", """{"variants": {"": {"renderer": "gtnh:gt_ore", "model": "t:block/cube"}}}""")
-        file("assets/gregtech/blockstates/gt.blockframes.json", """{"variants": {"": {"renderer": "gtnh:gt_frame", "model": "t:block/cube"}}}""")
+        file(
+            "assets/gregtech/blockstates/gt.blockmachines.json",
+            """{"variants": {"": {"renderer": "gtnh:gt_machine", "model": "t:block/cube"}}}""",
+        )
+        file(
+            "assets/gregtech/blockstates/gt.blockores2.json",
+            """{"variants": {"": {"renderer": "gtnh:gt_ore", "model": "t:block/cube"}}}""",
+        )
+        file(
+            "assets/gregtech/blockstates/gt.blockframes.json",
+            """{"variants": {"": {"renderer": "gtnh:gt_frame", "model": "t:block/cube"}}}""",
+        )
         file("assets/minecraft/blockstates/stone.json", """{"variants": {"": {"model": "t:block/cube"}}}""")
-        val faces = listOf("down", "up", "north", "south", "west", "east").joinToString(",") { """"$it": {"texture": "#all", "cullface": "$it"}""" }
+        val faces =
+            listOf(
+                "down",
+                "up",
+                "north",
+                "south",
+                "west",
+                "east",
+            ).joinToString(",") { """"$it": {"texture": "#all", "cullface": "$it"}""" }
         file(
             "assets/t/models/block/cube.json",
             """{"textures": {"all": "t:block/stone"}, "elements": [{"from": [0,0,0], "to": [16,16,16], "faces": {$faces}}]}""",
@@ -132,9 +181,14 @@ class GtRendererTest {
             override fun isRenderTopOnly() = false
         }
 
-    private class Cell(val state: BlockState, val entity: BlockEntity?)
+    private class Cell(
+        val state: BlockState,
+        val entity: BlockEntity?,
+    )
 
-    private class World(val cells: Map<Triple<Int, Int, Int>, Cell>) : BlockAccess {
+    private class World(
+        val cells: Map<Triple<Int, Int, Int>, Cell>,
+    ) : BlockAccess {
         private var x = 0
         private var y = 0
         private var z = 0
@@ -142,7 +196,11 @@ class GtRendererTest {
 
         private fun cell() = cells[Triple(x, y, z)]
 
-        override fun set(x: Int, y: Int, z: Int) {
+        override fun set(
+            x: Int,
+            y: Int,
+            z: Int,
+        ) {
             this.x = x
             this.y = y
             this.z = z
@@ -170,45 +228,89 @@ class GtRendererTest {
     }
 
     /** One drawn quad (two triangles). */
-    private data class Quad(val texture: Int, val positions: FloatArray, val uvs: FloatArray, val rgb: Triple<Float, Float, Float>, val blockLight: Int) {
+    private data class Quad(
+        val texture: Int,
+        val positions: FloatArray,
+        val uvs: FloatArray,
+        val rgb: Triple<Float, Float, Float>,
+        val blockLight: Int,
+    ) {
         val minX get() = (0 until 4).minOf { positions[it * 3] }
         val maxX get() = (0 until 4).maxOf { positions[it * 3] }
-        val normal: FloatArray get() = de.bluecolored.bluemap.gtnh.render.QuadModel.normal(positions)
+        val normal: FloatArray get() =
+            de.bluecolored.bluemap.gtnh.render.QuadModel
+                .normal(positions)
         val side: Int get() {
             val n = normal
-            return (0 until 6).first { Side.dx(it) == Math.round(n[0]) && Side.dy(it) == Math.round(n[1]) && Side.dz(it) == Math.round(n[2]) }
+            return (0 until 6).first {
+                Side.dx(
+                    it,
+                ) == Math.round(n[0]) && Side.dy(it) == Math.round(n[1]) && Side.dz(it) == Math.round(n[2])
+            }
         }
     }
 
     /** Records what renderers write; quads are rebuilt from the triangle pairs. */
-    private class Recorder(private val model: ArrayTileModel = ArrayTileModel(64)) : TileModel by model {
+    private class Recorder(
+        private val model: ArrayTileModel = ArrayTileModel(64),
+    ) : TileModel by model {
         val positions = HashMap<Int, FloatArray>()
         val uvs = HashMap<Int, FloatArray>()
         val textures = HashMap<Int, Int>()
         val colors = HashMap<Int, Triple<Float, Float, Float>>()
         val blockLights = HashMap<Int, Int>()
 
-        override fun setPositions(face: Int, x1: Float, y1: Float, z1: Float, x2: Float, y2: Float, z2: Float, x3: Float, y3: Float, z3: Float): TileModel {
+        override fun setPositions(
+            face: Int,
+            x1: Float,
+            y1: Float,
+            z1: Float,
+            x2: Float,
+            y2: Float,
+            z2: Float,
+            x3: Float,
+            y3: Float,
+            z3: Float,
+        ): TileModel {
             positions[face] = floatArrayOf(x1, y1, z1, x2, y2, z2, x3, y3, z3)
             return model.setPositions(face, x1, y1, z1, x2, y2, z2, x3, y3, z3)
         }
 
-        override fun setUvs(face: Int, u1: Float, v1: Float, u2: Float, v2: Float, u3: Float, v3: Float): TileModel {
+        override fun setUvs(
+            face: Int,
+            u1: Float,
+            v1: Float,
+            u2: Float,
+            v2: Float,
+            u3: Float,
+            v3: Float,
+        ): TileModel {
             uvs[face] = floatArrayOf(u1, v1, u2, v2, u3, v3)
             return model.setUvs(face, u1, v1, u2, v2, u3, v3)
         }
 
-        override fun setMaterialIndex(face: Int, m: Int): TileModel {
+        override fun setMaterialIndex(
+            face: Int,
+            m: Int,
+        ): TileModel {
             textures[face] = m
             return model.setMaterialIndex(face, m)
         }
 
-        override fun setColor(face: Int, r: Float, g: Float, b: Float): TileModel {
+        override fun setColor(
+            face: Int,
+            r: Float,
+            g: Float,
+            b: Float,
+        ): TileModel {
             colors[face] = Triple(r, g, b)
             return model.setColor(face, r, g, b)
         }
 
-        override fun setBlocklight(face: Int, bl: Int): TileModel {
+        override fun setBlocklight(
+            face: Int,
+            bl: Int,
+        ): TileModel {
             blockLights[face] = bl
             return model.setBlocklight(face, bl)
         }
@@ -229,9 +331,15 @@ class GtRendererTest {
             }
     }
 
-    private class Result(val quads: List<Quad>, val color: Color)
+    private class Result(
+        val quads: List<Quad>,
+        val color: Color,
+    )
 
-    private fun render(center: Cell, vararg neighbours: Pair<Triple<Int, Int, Int>, Cell>): Result {
+    private fun render(
+        center: Cell,
+        vararg neighbours: Pair<Triple<Int, Int, Int>, Cell>,
+    ): Result {
         // not (0, 0, 0) modulo the neighbourhood size: a fresh BlockNeighborhood believes it is already there
         val (x, y, z) = Triple(1, 65, 1)
         val cells = HashMap<Triple<Int, Int, Int>, Cell>()

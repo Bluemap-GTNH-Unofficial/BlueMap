@@ -62,7 +62,10 @@ class GtGeometryTest {
         val ends = faces.filter { it.box.touchesBoundary(it.side) }
         assertEquals(setOf(Side.WEST, Side.EAST), ends.map { it.side }.toSet())
         assertEquals(2, ends.size)
-        assertTrue(faces.none { (it.side == Side.WEST || it.side == Side.EAST) && !it.box.touchesBoundary(it.side) }, "no core face towards an arm")
+        assertTrue(
+            faces.none { (it.side == Side.WEST || it.side == Side.EAST) && !it.box.touchesBoundary(it.side) },
+            "no core face towards an arm",
+        )
         // the sides cover x 0..1 without gaps: arm 0..0.3125, core 0.3125..0.6875, arm 0.6875..1
         val up = faces.filter { it.side == Side.UP }.map { it.box.x0 to it.box.x1 }.sortedBy { it.first }
         assertEquals(listOf(0f to 0.3125f, 0.3125f to 0.6875f, 0.6875f to 1f), up)
@@ -95,7 +98,13 @@ class GtGeometryTest {
         assertFalse(GtPipeGeometry.showsConnectedTexture((1 shl Side.NORTH) or (1 shl Side.UP), Side.SOUTH))
     }
 
-    private fun uv(side: Int, x: Float, y: Float, z: Float, op: Int): Pair<Float, Float> {
+    private fun uv(
+        side: Int,
+        x: Float,
+        y: Float,
+        z: Float,
+        op: Int,
+    ): Pair<Float, Float> {
         val out = FloatArray(2)
         GtUv.uv(side, x, y, z, op, out, 0)
         return out[0] to out[1]

@@ -44,13 +44,18 @@ class MyCtmTexture(
 }
 
 /** `gtnh/mods/myctmlib.json`: base texture key -> connected texture. */
-class MyCtmData(private val textures: Map<Key, MyCtmTexture>) {
+class MyCtmData(
+    private val textures: Map<Key, MyCtmTexture>,
+) {
     val size: Int get() = textures.size
 
     operator fun get(texture: Key): MyCtmTexture? = textures[texture]
 
     /** Whether [candidate] (a neighbour's texture on the same side) connects with [target]. */
-    fun matches(target: MyCtmTexture, candidate: Key?): Boolean {
+    fun matches(
+        target: MyCtmTexture,
+        candidate: Key?,
+    ): Boolean {
         if (candidate == null) return false
         if (candidate == target.base || candidate in target.equivalents) return true
         return textures[candidate]?.equivalents?.contains(target.base) == true
@@ -65,15 +70,22 @@ class MyCtmData(private val textures: Map<Key, MyCtmTexture>) {
                 val entry = value.asJsonObject
                 val connection = entry.get("connection")?.takeIf { it.isJsonPrimitive }?.asString ?: return@forEach
                 val base = Key.parse(key)
-                textures[base] = MyCtmTexture(
-                    base = base,
-                    method = entry.get("method")?.takeIf { it.isJsonPrimitive }?.asString ?: "compact",
-                    connection = Key.parse(connection),
-                    alt = entry.get("alt")?.takeIf { it.isJsonPrimitive }?.asString?.let(Key::parse),
-                    equivalents = entry.getAsJsonArray("equivalents")?.mapNotNullTo(HashSet()) {
-                        it.takeIf { e -> e.isJsonPrimitive }?.asString?.let(Key::parse)
-                    } ?: emptySet(),
-                )
+                textures[base] =
+                    MyCtmTexture(
+                        base = base,
+                        method = entry.get("method")?.takeIf { it.isJsonPrimitive }?.asString ?: "compact",
+                        connection = Key.parse(connection),
+                        alt =
+                            entry
+                                .get("alt")
+                                ?.takeIf { it.isJsonPrimitive }
+                                ?.asString
+                                ?.let(Key::parse),
+                        equivalents =
+                            entry.getAsJsonArray("equivalents")?.mapNotNullTo(HashSet()) {
+                                it.takeIf { e -> e.isJsonPrimitive }?.asString?.let(Key::parse)
+                            } ?: emptySet(),
+                    )
             }
             return MyCtmData(textures)
         }
@@ -87,30 +99,43 @@ class MyCtmData(private val textures: Map<Key, MyCtmTexture>) {
  */
 object MyCtm {
     /** Quadrant order of [indices]: top-left, top-right, bottom-left, bottom-right (screen sx1, sy1, sx2, sy2). */
-    val QUADRANTS: Array<FloatArray> = arrayOf(
-        floatArrayOf(0f, 0f, 0.5f, 0.5f),
-        floatArrayOf(0.5f, 0f, 1f, 0.5f),
-        floatArrayOf(0f, 0.5f, 0.5f, 1f),
-        floatArrayOf(0.5f, 0.5f, 1f, 1f),
-    )
+    val QUADRANTS: Array<FloatArray> =
+        arrayOf(
+            floatArrayOf(0f, 0f, 0.5f, 0.5f),
+            floatArrayOf(0.5f, 0f, 1f, 0.5f),
+            floatArrayOf(0f, 0.5f, 0.5f, 1f),
+            floatArrayOf(0.5f, 0.5f, 1f, 1f),
+        )
 
     /** Whether the in-plane neighbour at screen offset ([h] right, [v] up) of a face has a matching texture. */
     fun interface FaceNeighbours {
-        fun matches(dx: Int, dy: Int, dz: Int): Boolean
+        fun matches(
+            dx: Int,
+            dy: Int,
+            dz: Int,
+        ): Boolean
     }
 
     /**
      * The four sub-icon indices (1..16 sheet cell + 1, 17..20 base quarters, 21..24 alt quarters) of [face] in
      * [QUADRANTS] order. Diagonals only count when both adjacent sides connect.
      */
-    fun indices(face: Direction, neighbours: FaceNeighbours, hasAlt: Boolean, out: IntArray = IntArray(4)): IntArray {
+    fun indices(
+        face: Direction,
+        neighbours: FaceNeighbours,
+        hasAlt: Boolean,
+        out: IntArray = IntArray(4),
+    ): IntArray {
         val r = Faces.right(face)
         val d = Faces.down(face, legacyBottom = true)
         // connections 0 up, 1 right, 2 down, 3 left; 4 up-right, 5 right-down, 6 down-left, 7 left-up
         val hs = intArrayOf(0, 1, 0, -1)
         val vs = intArrayOf(1, 0, -1, 0)
-        fun offset(h: Int, v: Int): Boolean =
-            neighbours.matches(r[0] * h - d[0] * v, r[1] * h - d[1] * v, r[2] * h - d[2] * v)
+
+        fun offset(
+            h: Int,
+            v: Int,
+        ): Boolean = neighbours.matches(r[0] * h - d[0] * v, r[1] * h - d[1] * v, r[2] * h - d[2] * v)
         val c = BooleanArray(8)
         for (i in 0 until 4) c[i] = offset(hs[i], vs[i])
         for (i in 4 until 8) {
@@ -118,34 +143,38 @@ object MyCtm {
             val b = if (i - 3 == 4) 0 else i - 3
             c[i] = c[a] && c[b] && offset(hs[a] + hs[b], vs[a] + vs[b])
         }
-        out[0] = when {
-            c[7] -> 1
-            c[3] && c[0] -> 11
-            c[3] -> 9
-            c[0] -> 3
-            else -> 17
-        }
-        out[1] = when {
-            c[4] -> 2
-            c[0] && c[1] -> 12
-            c[0] -> 4
-            c[1] -> 10
-            else -> 18
-        }
-        out[2] = when {
-            c[6] -> 5
-            c[2] && c[3] -> 15
-            c[2] -> 7
-            c[3] -> 13
-            else -> 19
-        }
-        out[3] = when {
-            c[5] -> 6
-            c[1] && c[2] -> 16
-            c[1] -> 14
-            c[2] -> 8
-            else -> 20
-        }
+        out[0] =
+            when {
+                c[7] -> 1
+                c[3] && c[0] -> 11
+                c[3] -> 9
+                c[0] -> 3
+                else -> 17
+            }
+        out[1] =
+            when {
+                c[4] -> 2
+                c[0] && c[1] -> 12
+                c[0] -> 4
+                c[1] -> 10
+                else -> 18
+            }
+        out[2] =
+            when {
+                c[6] -> 5
+                c[2] && c[3] -> 15
+                c[2] -> 7
+                c[3] -> 13
+                else -> 19
+            }
+        out[3] =
+            when {
+                c[5] -> 6
+                c[1] && c[2] -> 16
+                c[1] -> 14
+                c[2] -> 8
+                else -> 20
+            }
         if (hasAlt && out.any { it !in 17..20 }) {
             for (i in 0 until 4) if (out[i] in 17..20) out[i] += 4
         }

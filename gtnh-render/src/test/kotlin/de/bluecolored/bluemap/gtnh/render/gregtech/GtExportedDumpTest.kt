@@ -26,8 +26,8 @@ package de.bluecolored.bluemap.gtnh.render.gregtech
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import de.bluecolored.bluemap.gtnh.render.QuadModel
 import de.bluecolored.bluemap.core.util.Key
+import de.bluecolored.bluemap.gtnh.render.QuadModel
 import de.bluecolored.bluemap.gtnh.render.gregtech.GtTestTileEntities.machine
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -48,15 +48,25 @@ class GtExportedDumpTest {
     private val pack: Path? =
         System.getProperty("gtnh.exporterPack")?.let { Paths.get(it) }
             ?: Paths.get("../../out/exporter").takeIf { it.isDirectory() }?.let { dir ->
-                Files.list(dir).use { files -> files.filter { it.name.startsWith("bluemap-gtnh-resources-") && it.name.endsWith(".zip") }.sorted().toList().lastOrNull() }
+                Files.list(dir).use { files ->
+                    files
+                        .filter {
+                            it.name.startsWith(
+                                "bluemap-gtnh-resources-",
+                            ) && it.name.endsWith(".zip")
+                        }.sorted()
+                        .toList()
+                        .lastOrNull()
+                }
             }
 
     private fun <T> withDump(block: (Map<String, JsonObject>) -> T): T {
         assumeTrue(pack != null && Files.isRegularFile(pack), "no exporter pack")
         FileSystems.newFileSystem(pack!!, null as ClassLoader?).use { fs ->
-            val files = listOf("mte", "casings", "materials", "ores").associateWith { name ->
-                Files.newBufferedReader(fs.getPath("gtnh/gregtech/$name.json")).use { JsonParser.parseReader(it).asJsonObject }
-            }
+            val files =
+                listOf("mte", "casings", "materials", "ores").associateWith { name ->
+                    Files.newBufferedReader(fs.getPath("gtnh/gregtech/$name.json")).use { JsonParser.parseReader(it).asJsonObject }
+                }
             return block(files)
         }
     }
@@ -98,7 +108,11 @@ class GtExportedDumpTest {
                 for (facing in 0 until 6) {
                     for (active in 0..1) {
                         val te = machine(mte.id, facing = facing, active = active == 1, mainFacing = facing)
-                        assertEquals(mte.textures!![facing][active], GtFaces.machine(data, mte, te), "${mte.name} facing $facing active $active")
+                        assertEquals(
+                            mte.textures!![facing][active],
+                            GtFaces.machine(data, mte, te),
+                            "${mte.name} facing $facing active $active",
+                        )
                     }
                 }
             }
@@ -108,7 +122,10 @@ class GtExportedDumpTest {
             val differing =
                 hatches.filter { mte ->
                     (0 until 6).any { facing ->
-                        (0..1).any { active -> GtFaces.hatch(data, mte, mte.hatch!!, 0, facing, active, -1) != mte.textures!![facing][active] }
+                        (0..1).any { active ->
+                            GtFaces.hatch(data, mte, mte.hatch!!, 0, facing, active, -1) !=
+                                mte.textures!![facing][active]
+                        }
                     }
                 }
             assertTrue(differing.size * 100 <= hatches.size, "hatches differing from GT: ${differing.map { it.name }}")
@@ -126,20 +143,35 @@ class GtExportedDumpTest {
                 for ((block, faceOf) in blocks) {
                     val blockstate = fs.getPath("assets/${block.namespace}/blockstates/${block.value}.json")
                     if (!Files.isRegularFile(blockstate)) continue
-                    val variants = Files.newBufferedReader(blockstate).use { JsonParser.parseReader(it).asJsonObject.getAsJsonObject("variants") }
+                    val variants =
+                        Files
+                            .newBufferedReader(
+                                blockstate,
+                            ).use { JsonParser.parseReader(it).asJsonObject.getAsJsonObject("variants") }
                     for ((condition, variant) in variants.entrySet()) {
                         val meta = condition.removePrefix("meta=").toIntOrNull() ?: continue
                         val model = Key(variant.asJsonObject.get("model").asString)
                         if (!model.value.startsWith("gtnh_quads/")) continue
-                        val captured = Files.newBufferedReader(fs.getPath("assets/${model.namespace}/models/${model.value}.json")).use { QuadModel.parse(it) }
+                        val captured =
+                            Files
+                                .newBufferedReader(
+                                    fs.getPath("assets/${model.namespace}/models/${model.value}.json"),
+                                ).use { QuadModel.parse(it) }
                         val face = faceOf(meta) ?: continue
                         val expectedTextures = face.flatMap { listOfNotNull(it.texture, it.overlay) }
                         for (side in 0 until 6) {
                             val onSide = captured.quads.filter { it.facing.ordinal == directionOrdinal(side) }
-                            assertEquals(expectedTextures, onSide.map { captured.textures[it.texture] }, "$block meta $meta side $side textures")
+                            assertEquals(
+                                expectedTextures,
+                                onSide.map { captured.textures[it.texture] },
+                                "$block meta $meta side $side textures",
+                            )
                             if (side == Side.UP) {
                                 // tint: the up face has no vanilla shade, so the captured vertex colour is GT's rgba
-                                val tints = face.flatMap { layer -> listOfNotNull(layer.texture?.let { layer.rgb }, layer.overlay?.let { GtLayer.WHITE }) }
+                                val tints =
+                                    face.flatMap { layer ->
+                                        listOfNotNull(layer.texture?.let { layer.rgb }, layer.overlay?.let { GtLayer.WHITE })
+                                    }
                                 for ((quad, rgb) in onSide.zip(tints)) {
                                     assertEquals((rgb shr 16 and 0xFF) / 255f, quad.r, 0.01f, "$block meta $meta red")
                                     assertEquals((rgb shr 8 and 0xFF) / 255f, quad.g, 0.01f, "$block meta $meta green")
