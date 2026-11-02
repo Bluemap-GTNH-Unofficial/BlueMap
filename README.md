@@ -14,8 +14,6 @@ and the **GT New Horizons 2.9.0-RC-2** modpack. It is the main code repository o
 [Bluemap-GTNH-Unofficial/BlueMap-GTNH](https://github.com/Bluemap-GTNH-Unofficial/BlueMap-GTNH). **Go there for
 installation instructions, screenshots, the current status and releases.**
 
-![Formed community addon multiblocks rendered by the server mod](https://raw.githubusercontent.com/Bluemap-GTNH-Unofficial/BlueMap-GTNH/main/docs/images/addons-multiblocks.jpg)
-
 ## What this fork adds
 
 | Module | What it does |
