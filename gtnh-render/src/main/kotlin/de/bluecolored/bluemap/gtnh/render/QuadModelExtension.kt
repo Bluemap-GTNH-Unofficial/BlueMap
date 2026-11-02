@@ -25,8 +25,10 @@
 package de.bluecolored.bluemap.gtnh.render
 
 import de.bluecolored.bluemap.core.logger.Logger
+import de.bluecolored.bluemap.core.resources.ResourcePath
 import de.bluecolored.bluemap.core.resources.pack.resourcepack.ResourcePack
 import de.bluecolored.bluemap.core.resources.pack.resourcepack.ResourcePackExtension
+import de.bluecolored.bluemap.core.resources.pack.resourcepack.texture.Texture
 import de.bluecolored.bluemap.core.util.Key
 import java.nio.file.Files
 import java.nio.file.Path
@@ -44,10 +46,24 @@ class QuadModelExtension(
     private val pack: ResourcePack,
 ) : ResourcePackExtension {
     private val models = ConcurrentHashMap<Key, QuadModel>()
+    private val hiddenQuads = ConcurrentHashMap<QuadModel, BooleanArray>()
+    private val opaqueTextures = ConcurrentHashMap<ResourcePath<Texture>, Boolean>()
 
     operator fun get(key: Key): QuadModel? = models[key]
 
     val size: Int get() = models.size
+
+    /** [QuadModel.hidden] with the pack's textures: the quads a later quad with a fully opaque texture covers. */
+    fun hidden(model: QuadModel): BooleanArray = hiddenQuads.computeIfAbsent(model) { m -> m.hidden { opaque(m.textures[it]) } }
+
+    /** Whether every pixel of [texture] is fully opaque (false if the pack lacks it). */
+    private fun opaque(texture: ResourcePath<Texture>): Boolean =
+        opaqueTextures.computeIfAbsent(texture) {
+            val image =
+                it.getResource(pack.textures::get)?.let { t -> runCatching { t.textureImage }.getOrNull() }
+                    ?: return@computeIfAbsent false
+            (0 until image.width).all { x -> (0 until image.height).all { y -> image.getRGB(x, y) ushr 24 == 0xFF } }
+        }
 
     override fun loadResources(roots: Iterable<Path>) {
         for (root in roots) pack.loadResourcePath(root, ::loadRoot)

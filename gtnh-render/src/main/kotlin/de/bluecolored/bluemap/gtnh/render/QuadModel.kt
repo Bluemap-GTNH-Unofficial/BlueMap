@@ -50,6 +50,10 @@ import kotlin.math.abs
  * color with the vanilla directional face shading removed; `tint` multiplies the block's color calculator on top.
  * The file is also a valid vanilla model (only `textures` is read by BlueMap's model loader), so its textures are
  * loaded into the atlas like any other model's.
+ *
+ * Quads are in the client's draw order: the client draws a later quad over an earlier coplanar one (`GL_LEQUAL`),
+ * e.g. a Werkstoff block's material icon over its iron base. The webapp draws coplanar quads in texture order
+ * instead, so [hidden] tells renderers which quads a later opaque quad hides.
  */
 class QuadModel(
     val textures: List<ResourcePath<Texture>>,
@@ -73,6 +77,20 @@ class QuadModel(
         /** Y component of the unit face normal. */
         val normalY: Float,
     )
+
+    /**
+     * Per quad, the later quads that cover it completely: in the same axis-aligned plane, facing the same way, an
+     * axis-aligned rectangle containing it.
+     */
+    private val coveredBy: List<IntArray> by lazy {
+        quads.indices.map { i -> (i + 1 until quads.size).filter { covers(quads[it], quads[i]) }.toIntArray() }
+    }
+
+    /**
+     * Which quads the client never shows because a later quad covering them is drawn with a fully opaque texture
+     * ([opaque] of a texture index).
+     */
+    fun hidden(opaque: (Int) -> Boolean): BooleanArray = BooleanArray(quads.size) { i -> coveredBy[i].any { opaque(quads[it].texture) } }
 
     companion object {
         const val QUADS_FIELD = "gtnh_quads"
@@ -138,6 +156,51 @@ class QuadModel(
             }
             return QuadModel(textures, quads)
         }
+
+        /** Whether [top] covers [bottom] completely: see [coveredBy]. */
+        private fun covers(
+            top: Quad,
+            bottom: Quad,
+        ): Boolean {
+            if (top.facing != bottom.facing) return false
+            val plane = axis(top.facing)
+            val t = top.positions
+            val b = bottom.positions
+            for (i in 0 until 4) {
+                if (abs(t[i * 3 + plane] - t[plane]) > EPS || abs(b[i * 3 + plane] - t[plane]) > EPS) return false
+            }
+            for (axis in 0 until 3) {
+                if (axis == plane) continue
+                val min = min(t, axis)
+                val max = max(t, axis)
+                // the top quad must be the rectangle of its bounds, and the bottom one inside it
+                for (i in 0 until 4) {
+                    val c = t[i * 3 + axis]
+                    if (abs(c - min) > EPS && abs(c - max) > EPS) return false
+                }
+                if (min(b, axis) < min - EPS || max(b, axis) > max + EPS) return false
+            }
+            return true
+        }
+
+        private fun axis(direction: Direction): Int =
+            when (direction) {
+                Direction.WEST, Direction.EAST -> 0
+                Direction.DOWN, Direction.UP -> 1
+                Direction.NORTH, Direction.SOUTH -> 2
+            }
+
+        private fun min(
+            p: FloatArray,
+            axis: Int,
+        ): Float = minOf(p[axis], p[3 + axis], p[6 + axis], p[9 + axis])
+
+        private fun max(
+            p: FloatArray,
+            axis: Int,
+        ): Float = maxOf(p[axis], p[3 + axis], p[6 + axis], p[9 + axis])
+
+        private const val EPS = 1e-4f
 
         private fun parseRgb(value: String): Int {
             val hex = value.removePrefix("#")

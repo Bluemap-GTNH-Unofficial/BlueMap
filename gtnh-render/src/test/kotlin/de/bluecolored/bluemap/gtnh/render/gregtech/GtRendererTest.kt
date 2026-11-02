@@ -146,6 +146,21 @@ class GtRendererTest {
             """{"variants": {"": {"renderer": "gtnh:gt_frame", "model": "t:block/cube"}}}""",
         )
         file("assets/minecraft/blockstates/stone.json", """{"variants": {"": {"model": "t:block/cube"}}}""")
+        // MyCTMLib: the clean stainless casing (casing texture 49) connects, as a block and as a hatch background
+        png("assets/t/textures/block/casing_cleanstainless_ctm.png", 0x445566)
+        file(
+            "gtnh/mods/myctmlib.json",
+            """{"format": 1, "textures": {"t:block/casing_cleanstainless": {"method": "compact", "connection": "t:block/casing_cleanstainless_ctm"}}}""",
+        )
+        file(
+            "assets/gregtech/blockstates/gt.blockcasings.json",
+            """{"variants": {"meta=2": {"renderer": "gtnh:ctm", "model": "t:gtnh_quads/casing"}}}""",
+        )
+        file(
+            "assets/t/models/gtnh_quads/casing.json",
+            """{"textures": {"t0": "t:block/casing_cleanstainless"}, "gtnh_quads": [
+              {"texture": "#t0", "cullface": "south", "vertices": [[0,16,16,0,0],[0,0,16,0,16],[16,0,16,16,16],[16,16,16,16,0]]}]}""",
+        )
         val faces =
             listOf(
                 "down",
@@ -436,5 +451,28 @@ class GtRendererTest {
         val unknownFrame = render(Cell(BlockState(Key("gregtech", "gt.blockframes"), mapOf("meta" to "500")), null)).quads
         assertEquals(6, unknownFrame.size)
         assertTrue(unknownFrame.all { it.texture == id("stone") })
+    }
+
+    @Test
+    fun `casings and hatches showing that casing connect through the hatch's casing background`() {
+        val hatch = Cell(MACHINES, machine(30, facing = Side.NORTH, textureIndex = 49))
+        val casing = Cell(BlockState(Key("gregtech", "gt.blockcasings"), mapOf("meta" to "2")), null)
+        val sheet = id("casing_cleanstainless_ctm")
+        val base = id("casing_cleanstainless")
+
+        // alone, the hatch's background is MyCTMLib's four unconnected base quarters
+        val alone = render(hatch).quads.filter { it.side == Side.SOUTH }
+        assertEquals(4, alone.size)
+        assertTrue(alone.all { it.texture == base })
+
+        // a casing east of the hatch: both sides of the seam use the connection sheet
+        val hatchSide = render(hatch, Triple(1, 0, 0) to casing).quads.filter { it.side == Side.SOUTH }
+        assertEquals(listOf(base, sheet, base, sheet), hatchSide.map { it.texture })
+        val casingSide = render(casing, Triple(-1, 0, 0) to hatch).quads.filter { it.side == Side.SOUTH }
+        assertEquals(listOf(sheet, base, sheet, base), casingSide.map { it.texture })
+
+        // a hatch with another casing background does not connect
+        val other = Cell(MACHINES, machine(30, facing = Side.NORTH))
+        assertTrue(render(casing, Triple(-1, 0, 0) to other).quads.all { it.texture == base })
     }
 }

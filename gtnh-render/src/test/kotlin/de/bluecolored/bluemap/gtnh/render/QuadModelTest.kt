@@ -85,6 +85,29 @@ class QuadModelTest {
     }
 
     @Test
+    fun `a later opaque quad covering an earlier coplanar one hides it`() {
+        val up = "[[16,16,16, 16,16], [16,16,0, 16,0], [0,16,0, 0,0], [0,16,16, 0,16]]"
+        val upHalf = "[[16,16,16, 16,16], [16,16,8, 16,8], [0,16,8, 0,8], [0,16,16, 0,16]]"
+        val down = "[[0,0,16, 0,16], [0,0,0, 0,0], [16,0,0, 16,0], [16,0,16, 16,16]]"
+        val model =
+            QuadModel.parse(
+                StringReader(
+                    """
+                    {"textures": {"base": "m:block/iron", "icon": "m:block/icon", "overlay": "m:block/overlay"}, "gtnh_quads": [
+                      {"texture": "#base", "vertices": $up}, {"texture": "#base", "vertices": $down},
+                      {"texture": "#icon", "vertices": $up}, {"texture": "#overlay", "vertices": $down},
+                      {"texture": "#base", "vertices": $upHalf}
+                    ]}
+                    """.trimIndent(),
+                ),
+            )
+        // Werkstoff style: the opaque material icon hides the iron base; a cut-out overlay and a half quad hide nothing
+        val opaque = setOf(0, 1)
+        assertEquals(listOf(true, false, false, false, false), model.hidden { it in opaque }.toList())
+        assertEquals(listOf(false, false, false, false, false), model.hidden { false }.toList())
+    }
+
+    @Test
     fun `rejects malformed quads`() {
         assertThrows<IllegalArgumentException> {
             QuadModel.parse(

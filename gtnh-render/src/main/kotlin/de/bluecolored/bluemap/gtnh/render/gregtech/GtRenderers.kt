@@ -36,13 +36,21 @@ import de.bluecolored.bluemap.core.util.math.Color
 import de.bluecolored.bluemap.core.world.block.BlockNeighborhood
 import de.bluecolored.bluemap.gtnh.render.QuadModelExtension
 import de.bluecolored.bluemap.gtnh.render.QuadModelRenderer
+import de.bluecolored.bluemap.gtnh.render.mods.MeshQuad
+import de.bluecolored.bluemap.gtnh.render.mods.ModAssets
+import de.bluecolored.bluemap.gtnh.render.mods.ctm.CtmLooks
+import de.bluecolored.bluemap.gtnh.render.mods.ctm.MyCtm
+import de.bluecolored.bluemap.gtnh.render.mods.ctm.MyCtmData
+import de.bluecolored.bluemap.gtnh.render.mods.ctm.MyCtmTexture
 import kotlin.math.max
 
 /**
  * Shared part of the GregTech renderers: draws layered GT faces on axis-aligned boxes with GT's UV orientation,
  * tint, glow (full block light) and per-layer z-order. Lighting, cave removal, culling and the map colour follow
  * [QuadModelRenderer]. When the dump has nothing for a block, the variant's own model is drawn (the exporter's
- * static capture), so a GT block is never invisible.
+ * static capture), so a GT block is never invisible. A whole-face layer with a MyCTMLib `compact` texture (a hatch's
+ * or controller's casing background under Modernity-GTNH) is drawn as MyCTMLib's four connected quadrants, like the
+ * casing blocks themselves (`gtnh:ctm`).
  */
 abstract class GtBlockRenderer(
     resourcePack: ResourcePack,
@@ -54,10 +62,16 @@ abstract class GtBlockRenderer(
     private val quadModels: QuadModelExtension? = resourcePack.getExtension(QuadModelExtension.TYPE)
     private val quadRenderer by lazy { QuadModelRenderer(resourcePack, textureGallery, renderSettings) }
     private val modelRenderer by lazy { BlockRendererType.DEFAULT.create(resourcePack, textureGallery, renderSettings) }
+    private val myCtm: MyCtmData? = resourcePack.getExtension(ModAssets.TYPE)?.myCtm
+    private val ctmLooks: CtmLooks? = myCtm?.let { CtmLooks(resourcePack) }
 
     private val mapColor = Color()
     private var mapColorOpacity = 0f
     private val uvs = FloatArray(8)
+    private val ctmIndices = IntArray(4)
+
+    /** Connected quadrants by texture, then `(side * 4 + quadrant) * 25 + index`. */
+    private val ctmQuadrants = HashMap<MyCtmTexture, Array<MeshQuad?>>()
 
     final override fun render(
         block: BlockNeighborhood,
@@ -147,6 +161,7 @@ abstract class GtBlockRenderer(
         }
 
         val corners = box.corners(side)
+        val ctm = if (box == Box.FULL) myCtm else null
         var layerIndex = 0
         for (layer in face) {
             if (layer.glow && !data.renderGlowTextures) continue
@@ -154,11 +169,46 @@ abstract class GtBlockRenderer(
             for (i in 0 until 4) GtUv.uv(side, corners[i * 3], corners[i * 3 + 1], corners[i * 3 + 2], op, uvs, i * 2)
             val light = if (layer.glow) 15 else blockLight
             layer.texture?.let {
-                quad(blockModel, color, side, corners, layerIndex++, it, layer.rgb, light, sunLight)
+                val connected = ctm?.get(it)?.takeIf { t -> t.isCompact }
+                if (connected != null) {
+                    ctmFace(ctm, connected, block, blockModel, color, side, layerIndex++, layer.rgb, light, sunLight)
+                } else {
+                    quad(blockModel, color, side, corners, uvs, layerIndex++, it, layer.rgb, light, sunLight)
+                }
             }
             layer.overlay?.let {
-                quad(blockModel, color, side, corners, layerIndex++, it, GtLayer.WHITE, light, sunLight)
+                quad(blockModel, color, side, corners, uvs, layerIndex++, it, GtLayer.WHITE, light, sunLight)
             }
+        }
+    }
+
+    /** A whole block face of MyCTMLib texture [texture]: the four quadrants MyCTMLib picks from the neighbours. */
+    private fun ctmFace(
+        data: MyCtmData,
+        texture: MyCtmTexture,
+        block: BlockNeighborhood,
+        blockModel: TileModelView,
+        color: Color,
+        side: Int,
+        layerIndex: Int,
+        rgb: Int,
+        blockLight: Int,
+        sunLight: Int,
+    ) {
+        val looks = ctmLooks ?: return
+        val direction = Side.direction(side)
+        MyCtm.indices(
+            direction,
+            { dx, dy, dz -> data.matches(texture, looks.texture(block.getNeighborBlock(dx, dy, dz), direction)) },
+            texture.alt != null,
+            ctmIndices,
+        )
+        val cache = ctmQuadrants.getOrPut(texture) { arrayOfNulls(6 * 4 * 25) }
+        for (q in 0 until 4) {
+            val slot = (side * 4 + q) * 25 + ctmIndices[q]
+            val quadrant =
+                cache[slot] ?: MyCtm.quadrant(direction, texture, q, ctmIndices[q], GtLayer.WHITE, false).also { cache[slot] = it }
+            quad(blockModel, color, side, quadrant.positions, quadrant.uvs, layerIndex, quadrant.texture, rgb, blockLight, sunLight)
         }
     }
 
@@ -167,6 +217,7 @@ abstract class GtBlockRenderer(
         color: Color,
         side: Int,
         corners: FloatArray,
+        uvs: FloatArray,
         layerIndex: Int,
         texture: Key,
         rgb: Int,

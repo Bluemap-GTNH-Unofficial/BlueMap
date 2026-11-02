@@ -24,6 +24,8 @@
  */
 package de.bluecolored.bluemap.gtnh.render.gregtech
 
+import de.bluecolored.bluemap.core.util.Direction
+
 /** ForgeDirection ordinals, which GT uses for sides and facings. */
 object Side {
     const val DOWN = 0
@@ -51,6 +53,12 @@ object Side {
     fun dz(side: Int) = OFFSETS[side][2]
 
     fun opposite(side: Int) = side xor 1
+
+    /** The side of a BlueMap [Direction] (`UP, DOWN, NORTH, SOUTH, WEST, EAST`). */
+    fun of(direction: Direction): Int = if (direction.ordinal < 2) direction.ordinal xor 1 else direction.ordinal
+
+    /** The BlueMap [Direction] of a side. */
+    fun direction(side: Int): Direction = Direction.entries[if (side < 2) side xor 1 else side]
 }
 
 /** An axis-aligned box in block units. */

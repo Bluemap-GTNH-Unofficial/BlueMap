@@ -53,7 +53,8 @@ class ModelFaces(
     )
 
     /** The quads of a model (null if it is neither a quad model nor a JSON model of unrotated elements). */
-    fun quads(model: Key): List<MeshQuad>? = quadModels?.get(model)?.let(::fromQuadModel) ?: pack.models[model]?.let(::fromModel)
+    fun quads(model: Key): List<MeshQuad>? =
+        quadModels?.let { e -> e[model]?.let { fromQuadModel(e, it) } } ?: pack.models[model]?.let(::fromModel)
 
     /** What [state] shows on its [face] side: the largest quad of its model on that block face. */
     fun face(
@@ -75,11 +76,17 @@ class ModelFaces(
         return looks[face.ordinal]
     }
 
-    private fun fromQuadModel(model: QuadModel): List<MeshQuad> =
-        model.quads.map { q ->
+    /** The quads of a captured model the client shows: those a later opaque quad covers are left out. */
+    private fun fromQuadModel(
+        extension: QuadModelExtension,
+        model: QuadModel,
+    ): List<MeshQuad> {
+        val hidden = extension.hidden(model)
+        return model.quads.filterIndexed { i, _ -> !hidden[i] }.map { q ->
             val rgb = (Math.round(q.r * 255) shl 16) or (Math.round(q.g * 255) shl 8) or Math.round(q.b * 255)
             MeshQuad(q.positions, q.uvs, model.textures[q.texture], rgb, glow = q.lightEmission >= 15, tint = q.tint)
         }
+    }
 
     private fun fromModel(model: Model): List<MeshQuad>? {
         val elements = model.elements ?: return null

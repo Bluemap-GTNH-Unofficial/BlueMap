@@ -27,7 +27,9 @@ package de.bluecolored.bluemap.gtnh.render.mods.ctm
 import com.google.gson.JsonObject
 import de.bluecolored.bluemap.core.util.Direction
 import de.bluecolored.bluemap.core.util.Key
+import de.bluecolored.bluemap.gtnh.render.mods.FaceTexture
 import de.bluecolored.bluemap.gtnh.render.mods.Faces
+import de.bluecolored.bluemap.gtnh.render.mods.MeshQuad
 
 /** One MyCTMLib connected texture (`myctmlib` section of the base texture's `.mcmeta`). Only `compact` is drawn. */
 class MyCtmTexture(
@@ -182,4 +184,44 @@ object MyCtm {
         }
         return out
     }
+
+    /**
+     * Quadrant [q] of a whole block [face] drawn with sub-icon [index] of [texture] (see [indices]), tinted [rgb]
+     * (and with the block colour if [tint]).
+     */
+    fun quadrant(
+        face: Direction,
+        texture: MyCtmTexture,
+        q: Int,
+        index: Int,
+        rgb: Int,
+        tint: Boolean,
+    ): MeshQuad {
+        val (sheet, cells, cell) =
+            when {
+                index <= 16 -> Triple(texture.connection, 4, index - 1)
+                index <= 20 -> Triple(texture.base, 2, index - 17)
+                else -> Triple(texture.alt ?: texture.base, 2, index - 21)
+            }
+        val col = cell % cells
+        val row = cell / cells
+        val s = 1f / cells
+        val region = QUADRANTS[q]
+        val quad =
+            Faces.region(
+                face,
+                ZERO,
+                ONE,
+                region[0],
+                region[1],
+                region[2],
+                region[3],
+                FaceTexture(sheet, col * s, row * s, (col + 1) * s, (row + 1) * s, rgb = rgb),
+                legacyBottom = true,
+            )
+        return if (tint) MeshQuad(quad.positions, quad.uvs, quad.texture, quad.rgb, tint = true) else quad
+    }
+
+    private val ZERO = floatArrayOf(0f, 0f, 0f)
+    private val ONE = floatArrayOf(1f, 1f, 1f)
 }

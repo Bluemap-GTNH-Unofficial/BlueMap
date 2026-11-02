@@ -33,8 +33,6 @@ import de.bluecolored.bluemap.core.util.Direction
 import de.bluecolored.bluemap.core.util.Key
 import de.bluecolored.bluemap.core.util.math.Color
 import de.bluecolored.bluemap.core.world.block.BlockNeighborhood
-import de.bluecolored.bluemap.gtnh.render.mods.FaceTexture
-import de.bluecolored.bluemap.gtnh.render.mods.Faces
 import de.bluecolored.bluemap.gtnh.render.mods.MeshQuad
 import de.bluecolored.bluemap.gtnh.render.mods.ModAssets
 import de.bluecolored.bluemap.gtnh.render.mods.ModBlockRenderer
@@ -46,8 +44,9 @@ import kotlin.math.abs
  * `gtnh:ctm`: blocks whose model (a `gtnh_quads` capture or a JSON model of unrotated elements) uses a MyCTMLib
  * `compact` texture (`myctmlib.json`, e.g. Modernity-GTNH). The quads covering a whole block face with such a
  * texture are replaced by the four connected quadrants; everything else is drawn as in the model. A neighbour
- * connects when it is the same block state or shows a matching texture on the same side. Without MyCTMLib data,
- * or for transformed variants, the variant's model is drawn unchanged.
+ * connects when it is the same block state or shows a matching texture on the same side ([CtmLooks]: a GT hatch
+ * shows its casing background). Without MyCTMLib data, or for transformed variants, the variant's model is drawn
+ * unchanged.
  */
 class MyCtmRenderer(
     private val resourcePack: ResourcePack,
@@ -55,6 +54,7 @@ class MyCtmRenderer(
     renderSettings: RenderSettings,
 ) : ModBlockRenderer(resourcePack, textureGallery, renderSettings) {
     private val modelFaces = ModelFaces(resourcePack)
+    private val looks = CtmLooks(resourcePack)
     private val indices = IntArray(4)
 
     /** A block face drawn with connected quadrants. */
@@ -88,8 +88,8 @@ class MyCtmRenderer(
         for (face in prepared.faces) {
             val neighbours =
                 MyCtm.FaceNeighbours { dx, dy, dz ->
-                    val neighbor = block.getNeighborBlock(dx, dy, dz).blockState
-                    neighbor == state || data.matches(face.texture, modelFaces.face(neighbor, face.face)?.texture)
+                    val neighbor = block.getNeighborBlock(dx, dy, dz)
+                    neighbor.blockState == state || data.matches(face.texture, looks.texture(neighbor, face.face))
                 }
             MyCtm.indices(face.face, neighbours, face.texture.alt != null, indices)
             for (q in 0 until 4) emit(quadrant(face, q, indices[q]), block, blockModel, color)
@@ -104,32 +104,7 @@ class MyCtmRenderer(
     ): MeshQuad {
         val slot = q * 25 + index
         face.quads[slot]?.let { return it }
-        val tex = face.texture
-        val (texture, cells, cell) =
-            when {
-                index <= 16 -> Triple(tex.connection, 4, index - 1)
-                index <= 20 -> Triple(tex.base, 2, index - 17)
-                else -> Triple(tex.alt ?: tex.base, 2, index - 21)
-            }
-        val col = cell % cells
-        val row = cell / cells
-        val s = 1f / cells
-        val region = MyCtm.QUADRANTS[q]
-        val quad =
-            Faces
-                .region(
-                    face.face,
-                    ZERO,
-                    ONE,
-                    region[0],
-                    region[1],
-                    region[2],
-                    region[3],
-                    FaceTexture(texture, col * s, row * s, (col + 1) * s, (row + 1) * s, rgb = face.rgb),
-                    legacyBottom = true,
-                ).let { if (face.tint) MeshQuad(it.positions, it.uvs, it.texture, it.rgb, tint = true) else it }
-        face.quads[slot] = quad
-        return quad
+        return MyCtm.quadrant(face.face, face.texture, q, index, face.rgb, face.tint).also { face.quads[slot] = it }
     }
 
     private val preparedCache = ConcurrentHashMap<Key, Any>()
@@ -174,8 +149,6 @@ class MyCtmRenderer(
     }
 
     private companion object {
-        val ZERO = floatArrayOf(0f, 0f, 0f)
-        val ONE = floatArrayOf(1f, 1f, 1f)
         val NONE = Any()
     }
 }

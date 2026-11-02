@@ -41,7 +41,8 @@ import kotlin.math.roundToInt
 /**
  * Renders a [QuadModel] (blockstate variants with `"renderer": "gtnh:quads"`; the variant's `model` names the quad
  * model). Lighting, cave removal, culling and the map color follow BlueMap's `ResourceModelRenderer`; there is no
- * ambient occlusion because captured quads have no cuboid structure to test against.
+ * ambient occlusion because captured quads have no cuboid structure to test against. Quads a later opaque quad
+ * covers ([QuadModelExtension.hidden]) are skipped, so the client's draw order of coplanar layers holds.
  */
 class QuadModelRenderer(
     resourcePack: ResourcePack,
@@ -73,7 +74,10 @@ class QuadModelRenderer(
 
         val modelStart = blockModel.start
         val ownLight = block.lightData
-        for (quad in model.quads) {
+        val hidden = extension.hidden(model)
+        for (index in model.quads.indices) {
+            if (hidden[index]) continue
+            val quad = model.quads[index]
             val faced = relativeBlock(block, variant, quad.facing.toVector().x, quad.facing.toVector().y, quad.facing.toVector().z)
             val facedLight = faced.lightData
             val sunLight = max(ownLight.skyLight, facedLight.skyLight)
