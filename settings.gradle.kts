@@ -23,6 +23,7 @@ include(":core")
 include(":common")
 include(":legacy")
 include(":gtnh-render")
+include(":oracle")
 
 implementation("cli")
 implementation("fabric")

@@ -20,6 +20,7 @@ installation instructions, screenshots, the current status and releases.**
 |---|---|
 | `legacy/` | World loader `gtnh:anvil_1_7` for 1.7.10 Anvil worlds, including EndlessIDs / ChunkAPI extended block IDs and 16-bit metadata, with block names from the FML registry in `level.dat`. Flattens vanilla 1.7.10 blocks to 1.13 block states, including neighbour-dependent shapes. |
 | `gtnh-render/` | Renderers and resource-pack extensions for modded blocks: models captured by the client exporter, GregTech machines, pipes, cables, ores and frames, Chisel connected textures, Iron Chests, BiblioCraft, Applied Energistics 2, EnderIO and community addons. |
+| `oracle/` | BlueMap side of the per-block-state rendering oracle: renders every state of a client index from the exporter through BlueMap's real hires pipeline and rasterises it like the webapp (`./gradlew :oracle:renderStates --args="--index <client/index.json> --out <dir> --pack <file> --mc-cache <dir>"`). |
 | `implementations/gtnh/` | The Forge 1.7.10 server mod `bluemap-<version>-gtnh.<n>.jar` (Kotlin, Java 25 bytecode, runs on the pack's Java 17-26 server through lwjgl3ify). It shades BlueMap core and common. See [its README](implementations/gtnh/README.md). |
 | `testing/fixtures/` | Shared test vectors used by this repository and the sibling tool repositories. |
 
