@@ -277,8 +277,8 @@ object GtnlTesrs {
         /**
          * The inner beam to a former [distance] blocks along [forward]: `glTranslated(.5, .5, .5)`, yaw about Y,
          * pitch about X (local +Y -> forward), `glTranslated(-.5, start, -.5)`, then four sides around (.5, .5).
-         * The pitch/yaw lines are adapted from GTNL `BeamFormerRenderHelper` (LGPL-3.0) and remain available under
-         * LGPL-3.0; see NOTICE.md.
+         * The pitch/yaw lines are adapted from GTNL 0.2.7-rc2's `BeamFormerRenderHelper` (LGPL-3.0 at that version;
+         * later GTNL is GPL-3.0) and remain available under LGPL-3.0; see NOTICE.md.
          */
         fun beam(
             texture: Key,
@@ -349,8 +349,8 @@ object GtnlTesrs {
         )
 
         /**
-         * The layers bottom to top. Adapted from GTNL `MultiEssentiaJarRenderer` (LGPL-3.0); this function remains
-         * available under LGPL-3.0, see NOTICE.md.
+         * The layers bottom to top. Adapted from GTNL 0.2.7-rc2's `MultiEssentiaJarRenderer` (LGPL-3.0 at that
+         * version; later GTNL is GPL-3.0); this function remains available under LGPL-3.0, see NOTICE.md.
          */
         fun layers(entity: MultiEssentiaJarTileEntity): List<Layer> {
             val amounts = entity.amounts()

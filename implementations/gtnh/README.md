@@ -1,7 +1,8 @@
 # BlueMap for GT New Horizons (server mod)
 
-Forge 1.7.10 server mod (modid `bluemap`, Kotlin) embedding BlueMap for GT New Horizons 2.9.0-RC-2. It runs only on
-Java 25 through lwjgl3ify (the pack's Java 17-26 server); clients do not need it. Requires Forgelin (in the pack).
+Forge 1.7.10 server mod (modid `bluemap`, Kotlin) embedding BlueMap for GT New Horizons 2.9.0 (also tested on
+2.9.0-RC-2; the same jar runs on both). It runs only on Java 25 through lwjgl3ify (the pack's Java 17-26 server);
+clients do not need it. Requires Forgelin (in the pack).
 
 ## Build
 
