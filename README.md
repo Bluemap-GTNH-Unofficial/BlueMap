@@ -10,7 +10,7 @@
 > - There is **no warranty and no quality guarantee**. Back up your world before installing it.
 
 This is a fork of [BlueMap](https://github.com/BlueMap-Minecraft/BlueMap) 5.29 that ports it to **Minecraft 1.7.10**
-and the **GT New Horizons 2.9.0** modpack (2.9.0-RC-2 is tested too). It is the main code repository of
+and the **GT New Horizons 2.9.0** modpack (the only supported version). It is the main code repository of
 [Bluemap-GTNH-Unofficial/BlueMap-GTNH](https://github.com/Bluemap-GTNH-Unofficial/BlueMap-GTNH). **Go there for
 installation instructions, screenshots, the current status and releases.**
 
