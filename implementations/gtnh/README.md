@@ -20,7 +20,7 @@ mise exec java@temurin-25.0.5+8.0.LTS -- ./gradlew \
 Install `build/libs/bluemap-<version>.jar` (reobfuscated). The webapp must have been built in the BlueMap build
 (`:common:buildWebapp`, run automatically unless excluded).
 
-Version: `<bluemapUpstreamVersion>-gtnh.<gtnhRevision>` from BlueMap's root `gradle.properties` (e.g. `5.29-gtnh.1`),
+Version: `<bluemapUpstreamVersion>-gtnh.<gtnhRevision>` from BlueMap's root `gradle.properties` (e.g. `5.29-gtnh.2`),
 shared by the mod jar, `mcmod.info` and BlueMap itself (`/bluemap version`, webapp). `bluemapUpstreamVersion` is the
 latest upstream release tag reachable from the fork point; bump `gtnhRevision` for each fork release.
 
