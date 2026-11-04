@@ -256,10 +256,12 @@ export class RevalidatingFileLoader extends Loader {
             })
             .then(async (response) => {
                 if (this.clientDecompression) {
+                    // Pipe the body straight into the decompressor instead of buffering it with response.blob():
+                    // Chromium can fail blob() of a large body with "Failed to fetch" (blob storage limits), which
+                    // made a 11.6 MB textures.json.gz fail to load in Chrome 140.
                     const ds = new DecompressionStream("gzip");
-                    const decompressedStream = (await response.blob()).stream().pipeThrough(ds);
-                    const decompressedResponse = new Response(decompressedStream);
-                    return decompressedResponse;
+                    const body = response.body ?? (await response.blob()).stream();
+                    return new Response(body.pipeThrough(ds));
                 }
                 return response;
             })
