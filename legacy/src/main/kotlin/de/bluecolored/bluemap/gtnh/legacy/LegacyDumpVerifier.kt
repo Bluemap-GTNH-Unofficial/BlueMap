@@ -35,16 +35,73 @@ import de.bluecolored.bluemap.core.world.biome.Biome
 import de.bluecolored.bluemap.core.world.mca.region.MCARegion
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.Locale
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
 import kotlin.system.exitProcess
 
 /**
  * Ground-truth check of the legacy reader against a block dump of the live server (bmh harness `dump`):
  * NDJSON lines `{"x","y","z","id","name","meta","te":<object|null>}` with air omitted.
  *
- * Usage: `LegacyDumpVerifier <world-folder> <dimension-key> <dump.ndjson> [--box x1 y1 z1 x2 y2 z2]`
- * (default box: min/max of the dump coordinates). Exits with 1 on any mismatch.
+ * Usage: `LegacyDumpVerifier <world-folder> <dimension-key> <dump.ndjson> [--box x1 y1 z1 x2 y2 z2] [-- <world-folder> ...]`
+ * (default box: min/max of the dump coordinates). Several checks separated by `--` run side by side in one JVM; each
+ * report is printed whole, in argument order, between `=== check <n>: <dump>` and `=== end <n>: <seconds> s`.
+ * Exits with 1 on any mismatch or failed check.
  */
 fun main(args: Array<String>) {
+    val checks = ArrayList<List<String>>()
+    var current = ArrayList<String>()
+    for (arg in args) {
+        if (arg == "--") {
+            checks += current
+            current = ArrayList()
+        } else {
+            current += arg
+        }
+    }
+    checks += current
+    val parsed = checks.map(::parseCheck)
+
+    val pool = Executors.newFixedThreadPool(minOf(parsed.size, Runtime.getRuntime().availableProcessors()))
+    val futures =
+        parsed.map { (world, dimension, dump, box) ->
+            pool.submit(
+                Callable {
+                    val started = System.nanoTime()
+                    val outcome =
+                        runCatching { DumpVerifier.verify(world, dimension, DumpVerifier.readDump(dump), box) }
+                    outcome to (System.nanoTime() - started) / 1e9
+                },
+            )
+        }
+    var failed = false
+    futures.forEachIndexed { n, future ->
+        val (result, seconds) = future.get()
+        println("=== check ${n + 1}: ${parsed[n].dump}")
+        result
+            .onSuccess {
+                print(it.report(50))
+                failed = failed || it.mismatches.isNotEmpty()
+            }.onFailure {
+                println("error: $it")
+                failed = true
+            }
+        println("=== end ${n + 1}: ${String.format(Locale.ROOT, "%.1f", seconds)} s")
+        System.out.flush()
+    }
+    pool.shutdown()
+    if (failed) exitProcess(1)
+}
+
+private data class Check(
+    val world: Path,
+    val dimension: Key,
+    val dump: Path,
+    val box: DumpVerifier.Box?,
+)
+
+private fun parseCheck(args: List<String>): Check {
     val positional = ArrayList<String>()
     var box: DumpVerifier.Box? = null
     var i = 0
@@ -59,13 +116,9 @@ fun main(args: Array<String>) {
         }
     }
     require(positional.size == 3) {
-        "Usage: LegacyDumpVerifier <world-folder> <dimension-key> <dump.ndjson> [--box x1 y1 z1 x2 y2 z2]"
+        "Usage: LegacyDumpVerifier <world-folder> <dimension-key> <dump.ndjson> [--box x1 y1 z1 x2 y2 z2] [-- ...]"
     }
-
-    val entries = DumpVerifier.readDump(Path.of(positional[2]))
-    val result = DumpVerifier.verify(Path.of(positional[0]), Key.parse(positional[1]), entries, box)
-    print(result.report(50))
-    if (result.mismatches.isNotEmpty()) exitProcess(1)
+    return Check(Path.of(positional[0]), Key.parse(positional[1]), Path.of(positional[2]), box)
 }
 
 object DumpVerifier {

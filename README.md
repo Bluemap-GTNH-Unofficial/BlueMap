@@ -47,6 +47,9 @@ mise exec java@temurin-25.0.5+8.0.LTS -- ./gradlew \
   build
 ```
 
+(On Linux drop `/Contents/Home`: the installation paths are the `mise where` directories, with `/Contents/Home`
+appended only on macOS. In the umbrella workspace `../pipeline/gradlew` does this.)
+
 The server mod jar is `implementations/gtnh/build/libs/bluemap-5.29-gtnh.2.jar`. The upstream platforms (Fabric,
 Forge, Paper and so on) still build as before but are not maintained or tested in this fork.
 

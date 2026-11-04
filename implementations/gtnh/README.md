@@ -17,6 +17,9 @@ mise exec java@temurin-25.0.5+8.0.LTS -- ./gradlew \
   build
 ```
 
+The installation paths are the `mise where` directories, with `/Contents/Home` appended only on macOS (drop it on
+Linux). In the umbrella workspace `../../../pipeline/gradlew build` does this.
+
 Install `build/libs/bluemap-<version>.jar` (reobfuscated). The webapp must have been built in the BlueMap build
 (`:common:buildWebapp`, run automatically unless excluded).
 

@@ -31,7 +31,10 @@ tasks.register<JavaExec>("legacyStats") {
     javaLauncher = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(25) }
 }
 
-/** Ground-truth check against a server block dump: `./gradlew :legacy:verifyDump --args="<world> <dimension> <dump.ndjson> [--box x1 y1 z1 x2 y2 z2]"` */
+/**
+ * Ground-truth check against a server block dump: `./gradlew :legacy:verifyDump --args="<world> <dimension> <dump.ndjson>
+ * [--box x1 y1 z1 x2 y2 z2] [-- <world> <dimension> <dump.ndjson> ...]"` (several checks in one run, side by side)
+ */
 tasks.register<JavaExec>("verifyDump") {
     group = "verification"
     classpath = sourceSets.main.get().runtimeClasspath
